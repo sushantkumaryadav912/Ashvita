@@ -13,8 +13,11 @@ const COLORS = {
 };
 
 export default function HealthStatusCard({ status, message }) {
+  const safeStatus = ['normal', 'warning', 'critical'].includes(status) ? status : 'normal';
+  const safeMessage = typeof message === 'string' && message.trim() ? message : 'No status message available.';
+
   const getStatusColor = () => {
-    switch (status) {
+    switch (safeStatus) {
       case 'normal':
         return COLORS.success;
       case 'warning':
@@ -27,7 +30,7 @@ export default function HealthStatusCard({ status, message }) {
   };
 
   const getStatusBackground = () => {
-    switch (status) {
+    switch (safeStatus) {
       case 'normal':
         return COLORS.statusNormal;
       case 'warning':
@@ -40,7 +43,7 @@ export default function HealthStatusCard({ status, message }) {
   };
 
   const getStatusIcon = () => {
-    switch (status) {
+    switch (safeStatus) {
       case 'normal':
         return <Ionicons name="checkmark-circle" size={24} color={COLORS.success} />;
       case 'warning':
@@ -53,7 +56,7 @@ export default function HealthStatusCard({ status, message }) {
   };
 
   const getStatusText = () => {
-    switch (status) {
+    switch (safeStatus) {
       case 'normal':
         return 'Normal';
       case 'warning':
@@ -74,7 +77,7 @@ export default function HealthStatusCard({ status, message }) {
         <Text style={[styles.statusText, { color: getStatusColor() }]}>
           {getStatusText()}
         </Text>
-        <Text style={styles.messageText}>{message}</Text>
+        <Text style={styles.messageText}>{safeMessage}</Text>
       </View>
     </View>
   );

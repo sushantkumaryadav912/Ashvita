@@ -1,5 +1,6 @@
-import React from 'react';
-import { ScrollView, View, Text, StyleSheet } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { ScrollView, View, Text, StyleSheet, ActivityIndicator } from 'react-native';
+import axios from 'axios';
 import AlertsSection from '../components/AlertsSection';
 import DoctorNotesList from '../components/DoctorNotesList';
 import HealthStatusCard from '../components/HealthStatusCard';
@@ -10,39 +11,63 @@ const COLORS = {
   textPrimary: '#333',
   textSecondary: '#666',
   primary: '#007bff',
+  error: '#ff4d4d',
 };
 
-// Mock data simulating Azure Cosmos DB or IoT wearable inputs
-const mockVitals = [
-  { title: 'Heart Rate', value: 72, unit: 'bpm', icon: 'heart', color: '#ff4d4d', trend: 'stable' },
-  { title: 'SpO2', value: 98, unit: '%', icon: 'droplet', color: '#007bff', trend: 'up' },
-  { title: 'Blood Pressure', value: '120/80', unit: 'mmHg', icon: 'activity', color: '#28a745', trend: 'down' },
-  { title: 'Temperature', value: 36.6, unit: '°C', icon: 'thermometer', color: '#ffa500', trend: 'stable' },
-];
-
-const mockAlerts = [
-  {
-    id: 'alert-001',
-    type: 'warning',
-    title: 'Elevated Heart Rate',
-    message: 'Heart rate reached 90 bpm during exercise. Monitor closely.',
-    timestamp: '2025-05-06 14:30',
-  },
-  {
-    id: 'alert-002',
-    type: 'info',
-    title: 'Medication Reminder',
-    message: 'Take your prescribed medication at 18:00.',
-    timestamp: '2025-05-06 09:00',
-  },
-];
-
-const mockHealthStatus = {
-  status: 'normal',
-  message: 'All vitals are within normal ranges. Continue regular monitoring.',
-};
+// Base URL for the Azure backend API (replace with your actual API URL)
+const API_BASE_URL = 'https://localhost:5000/api';
 
 export default function DashboardScreen() {
+  const [vitals, setVitals] = useState([]);
+  const [alerts, setAlerts] = useState([]);
+  const [healthStatus, setHealthStatus] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+
+        // Fetch all data concurrently
+        const [vitalsResponse, alertsResponse, healthStatusResponse] = await Promise.all([
+          axios.get(`${API_BASE_URL}/vitals`),
+          axios.get(`${API_BASE_URL}/alerts`),
+          axios.get(`${API_BASE_URL}/health-status`),
+        ]);
+
+        setVitals(vitalsResponse.data);
+        setAlerts(alertsResponse.data);
+        setHealthStatus(healthStatusResponse.data);
+      } catch (err) {
+        setError('Failed to fetch data. Please try again later.');
+        console.error('Error fetching data:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+  }, []);
+
+  if (loading) {
+    return (
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color={COLORS.primary} />
+        <Text style={styles.loadingText}>Loading...</Text>
+      </View>
+    );
+  }
+
+  if (error) {
+    return (
+      <View style={styles.errorContainer}>
+        <Text style={styles.errorText}>{error}</Text>
+      </View>
+    );
+  }
+
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.contentContainer}>
       <View style={styles.header}>
@@ -52,29 +77,41 @@ export default function DashboardScreen() {
 
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>Health Status</Text>
-        <HealthStatusCard status={mockHealthStatus.status} message={mockHealthStatus.message} />
+        {healthStatus ? (
+          <HealthStatusCard status={healthStatus.status} message={healthStatus.message} />
+        ) : (
+          <Text style={styles.noDataText}>No health status available.</Text>
+        )}
       </View>
 
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>Vitals</Text>
         <View style={styles.vitalsContainer}>
-          {mockVitals.map((vital, index) => (
-            <VitalsCard
-              key={index}
-              title={vital.title}
-              value={vital.value}
-              unit={vital.unit}
-              icon={vital.icon}
-              color={vital.color}
-              trend={vital.trend}
-            />
-          ))}
+          {vitals.length > 0 ? (
+            vitals.map((vital, index) => (
+              <VitalsCard
+                key={index}
+                title={vital.title}
+                value={vital.value}
+                unit={vital.unit}
+                icon={vital.icon}
+                color={vital.color}
+                trend={vital.trend}
+              />
+            ))
+          ) : (
+            <Text style={styles.noDataText}>No vitals data available.</Text>
+          )}
         </View>
       </View>
 
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>Alerts</Text>
-        <AlertsSection alerts={mockAlerts} />
+        {alerts.length > 0 ? (
+          <AlertsSection alerts={alerts} />
+        ) : (
+          <Text style={styles.noDataText}>No alerts available.</Text>
+        )}
       </View>
 
       <View style={styles.section}>
@@ -91,7 +128,7 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.background,
   },
   contentContainer: {
-    paddingHorizontal: 16, // Keep horizontal padding, remove top/bottom padding
+    paddingHorizontal: 16,
   },
   header: {
     paddingVertical: 20,
@@ -120,5 +157,33 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     flexWrap: 'wrap',
     justifyContent: 'space-between',
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: COLORS.background,
+  },
+  loadingText: {
+    marginTop: 8,
+    fontSize: 16,
+    color: COLORS.textPrimary,
+  },
+  errorContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: COLORS.background,
+    padding: 16,
+  },
+  errorText: {
+    fontSize: 16,
+    color: COLORS.error,
+    textAlign: 'center',
+  },
+  noDataText: {
+    fontSize: 14,
+    color: COLORS.textSecondary,
+    textAlign: 'center',
   },
 });

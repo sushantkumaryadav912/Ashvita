@@ -8,26 +8,35 @@ const COLORS = {
   cardBackground: '#fff',
   warning: '#ffa500',
   info: '#007bff',
+  error: '#ff4d4d',
 };
 
 export default function VitalsCard({ title, value, unit, icon, color, trend }) {
+  // Validate and set default props
+  const safeTitle = typeof title === 'string' && title.trim() ? title : 'Unknown Vital';
+  const safeValue = value != null ? (typeof value === 'number' ? value.toFixed(1) : value.toString()) : '--';
+  const safeUnit = typeof unit === 'string' && unit.trim() ? unit : '';
+  const safeIcon = typeof icon === 'string' && icon.trim() ? icon : 'heart';
+  const safeColor = typeof color === 'string' && color.trim() ? color : COLORS.textSecondary;
+  const safeTrend = ['up', 'down', 'stable'].includes(trend) ? trend : null;
+
   const renderIcon = () => {
-    switch (icon) {
+    switch (safeIcon) {
       case 'heart':
-        return <Ionicons name="heart" size={20} color={color} />;
+        return <Ionicons name="heart" size={20} color={safeColor} />;
       case 'activity':
-        return <Ionicons name="pulse" size={20} color={color} />;
+        return <Ionicons name="pulse" size={20} color={safeColor} />;
       case 'droplet':
-        return <Ionicons name="water" size={20} color={color} />;
+        return <Ionicons name="water" size={20} color={safeColor} />;
       case 'thermometer':
-        return <Ionicons name="thermometer" size={20} color={color} />;
+        return <Ionicons name="thermometer" size={20} color={safeColor} />;
       default:
-        return <Ionicons name="heart" size={20} color={color} />;
+        return <Ionicons name="heart" size={20} color={safeColor} />;
     }
   };
 
   const renderTrendIcon = () => {
-    switch (trend) {
+    switch (safeTrend) {
       case 'up':
         return <Ionicons name="trending-up" size={16} color={COLORS.warning} />;
       case 'down':
@@ -41,12 +50,12 @@ export default function VitalsCard({ title, value, unit, icon, color, trend }) {
     <View style={styles.card}>
       <View style={styles.header}>
         {renderIcon()}
-        <Text style={styles.title}>{title}</Text>
+        <Text style={styles.title}>{safeTitle}</Text>
       </View>
       <View style={styles.valueContainer}>
-        <Text style={styles.value}>{value}</Text>
-        <Text style={styles.unit}>{unit}</Text>
-        {trend && <View style={styles.trendIcon}>{renderTrendIcon()}</View>}
+        <Text style={styles.value}>{safeValue}</Text>
+        {safeUnit ? <Text style={styles.unit}>{safeUnit}</Text> : null}
+        {safeTrend && <View style={styles.trendIcon}>{renderTrendIcon()}</View>}
       </View>
     </View>
   );

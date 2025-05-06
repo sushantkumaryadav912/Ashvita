@@ -1,5 +1,6 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import axios from 'axios';
 import { Ionicons } from '@expo/vector-icons';
 
 const COLORS = {
@@ -8,56 +9,88 @@ const COLORS = {
   textSecondary: '#666',
   cardBackground: '#fff',
   primaryLight: '#e6f3ff',
+  error: '#ff4d4d',
 };
 
+// Base URL for the Azure backend API (replace with your actual API URL)
+const API_BASE_URL = 'https://localhost:5000/api';
+
 export default function DoctorNotesList() {
-  const notes = [
-    {
-      id: '1',
-      doctorName: 'Dr. Sarah Johnson',
-      date: '2023-05-10',
-      note: 'Patient is responding well to the new medication. Blood pressure is stabilizing.',
-      specialty: 'Cardiologist',
-    },
-    {
-      id: '2',
-      doctorName: 'Dr. Michael Chen',
-      date: '2023-04-28',
-      note: 'Recommended physical therapy sessions twice a week for lower back pain.',
-      specialty: 'Orthopedic',
-    },
-  ];
+  const [notes, setNotes] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    const fetchDoctorNotes = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+
+        const response = await axios.get(`${API_BASE_URL}/doctor-notes`);
+        setNotes(response.data);
+      } catch (err) {
+        setError('Failed to fetch doctor notes. Please try again later.');
+        console.error('Error fetching doctor notes:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchDoctorNotes();
+  }, []);
 
   const formatDate = (dateString) => {
     const options = { year: 'numeric', month: 'short', day: 'numeric' };
     return new Date(dateString).toLocaleDateString(undefined, options);
   };
 
+  if (loading) {
+    return (
+      <View style={styles.loadingContainer}>
+        <Text style={styles.loadingText}>Loading doctor notes...</Text>
+      </View>
+    );
+  }
+
+  if (error) {
+    return (
+      <View style={styles.errorContainer}>
+        <Text style={styles.errorText}>{error}</Text>
+      </View>
+    );
+  }
+
   return (
     <View style={styles.container}>
-      {notes.map((note) => (
-        <TouchableOpacity key={note.id} style={styles.noteCard}>
-          <View style={styles.noteHeader}>
-            <View style={styles.doctorInfo}>
-              <Ionicons name="person" size={16} color={COLORS.primary} />
-              <Text style={styles.doctorName}>{note.doctorName}</Text>
-              <Text style={styles.doctorSpecialty}> - {note.specialty}</Text>
-            </View>
-            <View style={styles.dateContainer}>
-              <Ionicons name="calendar" size={14} color={COLORS.textSecondary} />
-              <Text style={styles.date}>{formatDate(note.date)}</Text>
-            </View>
-          </View>
-          <Text style={styles.noteText}>{note.note}</Text>
-          <TouchableOpacity style={styles.viewMoreButton}>
-            <Text style={styles.viewMoreText}>View Full Note</Text>
-            <Ionicons name="chevron-forward" size={16} color={COLORS.primary} />
+      {notes.length > 0 ? (
+        <>
+          {notes.map((note) => (
+            <TouchableOpacity key={note.id} style={styles.noteCard}>
+              <View style={styles.noteHeader}>
+                <View style={styles.doctorInfo}>
+                  <Ionicons name="person" size={16} color={COLORS.primary} />
+                  <Text style={styles.doctorName}>{note.doctorName}</Text>
+                  <Text style={styles.doctorSpecialty}> - {note.specialty}</Text>
+                </View>
+                <View style={styles.dateContainer}>
+                  <Ionicons name="calendar" size={14} color={COLORS.textSecondary} />
+                  <Text style={styles.date}>{formatDate(note.date)}</Text>
+                </View>
+              </View>
+              <Text style={styles.noteText}>{note.note}</Text>
+              <TouchableOpacity style={styles.viewMoreButton}>
+                <Text style={styles.viewMoreText}>View Full Note</Text>
+                <Ionicons name="chevron-forward" size={16} color={COLORS.primary} />
+              </TouchableOpacity>
+            </TouchableOpacity>
+          ))}
+          <TouchableOpacity style={styles.allNotesButton}>
+            <Text style={styles.allNotesText}>View All Notes</Text>
           </TouchableOpacity>
-        </TouchableOpacity>
-      ))}
-      <TouchableOpacity style={styles.allNotesButton}>
-        <Text style={styles.allNotesText}>View All Notes</Text>
-      </TouchableOpacity>
+        </>
+      ) : (
+        <Text style={styles.noDataText}>No doctor notes available.</Text>
+      )}
     </View>
   );
 }
@@ -130,5 +163,27 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: COLORS.primary,
     fontWeight: '600',
+  },
+  loadingContainer: {
+    padding: 16,
+    alignItems: 'center',
+  },
+  loadingText: {
+    fontSize: 14,
+    color: COLORS.textPrimary,
+  },
+  errorContainer: {
+    padding: 16,
+    alignItems: 'center',
+  },
+  errorText: {
+    fontSize: 14,
+    color: COLORS.error,
+    textAlign: 'center',
+  },
+  noDataText: {
+    fontSize: 14,
+    color: COLORS.textSecondary,
+    textAlign: 'center',
   },
 });
