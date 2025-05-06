@@ -5,6 +5,7 @@ import {
 } from 'react-native';
 import axios from 'axios';
 import { Ionicons } from '@expo/vector-icons';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import ProfileInfoCard from '../components/ProfileInfoCard';
 import EmergencyContactsList from '../components/EmergencyContactsList';
 import MedicalRecordsList from '../components/MedicalRecordsList';
@@ -24,12 +25,15 @@ const COLORS = {
   warning: '#ffd166',
 };
 
-const API_BASE_URL = 'https://localhost:5000/api';
+const API_BASE_URL = process.env.API_BASE_URL || 'https://api.example.com';
 
 export default function ProfileScreen() {
   const [profile, setProfile] = useState(null);
   const [emergencyContacts, setEmergencyContacts] = useState([]);
   const [medicalRecords, setMedicalRecords] = useState([]);
+  const [adminUsers, setAdminUsers] = useState([]);
+  const [adminPatients, setAdminPatients] = useState([]);
+  const [adminDoctors, setAdminDoctors] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [refreshing, setRefreshing] = useState(false);
@@ -37,16 +41,32 @@ export default function ProfileScreen() {
   const fetchData = useCallback(async () => {
     try {
       setError(null);
+      const token = await AsyncStorage.getItem('token');
+      const config = { headers: { Authorization: `Bearer ${token}` } };
 
+      // Fetch profile, emergency contacts, and medical records
       const [profileResponse, contactsResponse, recordsResponse] = await Promise.all([
-        axios.get(`${API_BASE_URL}/profile`),
-        axios.get(`${API_BASE_URL}/emergency-contacts`),
-        axios.get(`${API_BASE_URL}/medical-records`),
+        axios.get(`${API_BASE_URL}/profile`, config),
+        axios.get(`${API_BASE_URL}/emergency-contacts`, config),
+        axios.get(`${API_BASE_URL}/medical-records`, config),
       ]);
 
       setProfile(profileResponse.data);
       setEmergencyContacts(contactsResponse.data);
       setMedicalRecords(recordsResponse.data);
+
+      // Fetch admin-specific data if user is an admin
+      if (profileResponse.data.userType === 'admin') {
+        const [usersRes, patientsRes, doctorsRes] = await Promise.all([
+          axios.get(`${API_BASE_URL}/admin/users`, config),
+          axios.get(`${API_BASE_URL}/admin/patients`, config),
+          axios.get(`${API_BASE_URL}/admin/doctors`, config),
+        ]);
+
+        setAdminUsers(usersRes.data);
+        setAdminPatients(patientsRes.data);
+        setAdminDoctors(doctorsRes.data);
+      }
     } catch (err) {
       setError('Failed to fetch profile data. Please try again later.');
       console.error('Error fetching profile data:', err);
@@ -89,6 +109,78 @@ export default function ProfileScreen() {
     );
   }
 
+  const renderDoctorProfessionalInfo = () => {
+    if (!profile || profile.userType !== 'doctor') return null;
+    return (
+      <View style={styles.section}>
+        <View style={styles.sectionHeader}>
+          <Ionicons name="medkit" size={20} color={COLORS.primary} />
+          <Text style={styles.sectionTitle}>Professional Information</Text>
+        </View>
+        <View style={styles.infoContainer}>
+          <Text style={styles.infoLabel}>Specialization: {profile.specialization || 'Not Provided'}</Text>
+          <Text style={styles.infoLabel}>License Number: {profile.licenseNumber || 'Not Provided'}</Text>
+          <Text style={styles.infoLabel}>Hospital: {profile.hospitalAffiliation || 'Not Provided'}</Text>
+          <Text style={styles.infoLabel}>Experience: {profile.yearsOfExperience || 'Not Provided'}</Text>
+        </View>
+      </View>
+    );
+  };
+
+  const renderAdminDashboard = () => {
+    if (!profile || profile.userType !== 'admin') return null;
+    return (
+      <View style={styles.section}>
+        <View style={styles.sectionHeader}>
+          <Ionicons name="people" size={20} color={COLORS.primary} />
+          <Text style={styles.sectionTitle}>Admin Dashboard</Text>
+        </View>
+        <View style={styles.infoContainer}>
+          <Text style={styles.infoLabel}>Role: {profile.role || 'Not Provided'}</Text>
+          <Text style={styles.infoLabel}>Permissions: {(profile.permissions || []).join(', ') || 'Not Provided'}</Text>
+        </View>
+
+        {/* Users List */}
+        <Text style={styles.sectionTitle}>Users ({adminUsers.length})</Text>
+        {adminUsers.length > 0 ? (
+          adminUsers.map(user => (
+            <View key={user.id} style={styles.infoItem}>
+              <Text style={styles.infoLabel}>{user.name} ({user.userType}) - {user.email}</Text>
+            </View>
+          ))
+        ) : (
+          <Text style={styles.noDataText}>No users available.</Text>
+        )}
+
+        {/* Patients List */}
+        <Text style={styles.sectionTitle}>Patients ({adminPatients.length})</Text>
+        {adminPatients.length > 0 ? (
+          adminPatients.map(patient => (
+            <View key={patient.id} style={styles.infoItem}>
+              <Text style={styles.infoLabel}>{patient.name} - {patient.email}</Text>
+              <Text style={styles.infoSubLabel}>Allergies: {(patient.allergies || []).join(', ') || 'None'}</Text>
+            </View>
+          ))
+        ) : (
+          <Text style={styles.noDataText}>No patients available.</Text>
+        )}
+
+        {/* Doctors List */}
+        <Text style={styles.sectionTitle}>Doctors ({adminDoctors.length})</Text>
+        {adminDoctors.length > 0 ? (
+          adminDoctors.map(doctor => (
+            <View key={doctor.id} style={styles.infoItem}>
+              <Text style={styles.infoLabel}>{doctor.name} - {doctor.email}</Text>
+              <Text style={styles.infoSubLabel}>Specialization: {doctor.specialization || 'Not Provided'}</Text>
+            </View>
+          ))
+        ) : (
+          <Text style={styles.noDataText}>No doctors available.</Text>
+        )}
+      </View>
+    );
+  };
+
   return (
     <ScrollView
       style={styles.container}
@@ -112,7 +204,9 @@ export default function ProfileScreen() {
             </View>
           )}
         </View>
-        <Text style={styles.headerTitle}>Health Profile</Text>
+        <Text style={styles.headerTitle}>
+          {profile?.userType === 'admin' ? 'Admin Dashboard' : 'Health Profile'}
+        </Text>
         <TouchableOpacity style={styles.settingsButton}>
           <Ionicons name="settings-outline" size={24} color={COLORS.textPrimary} />
         </TouchableOpacity>
@@ -141,51 +235,62 @@ export default function ProfileScreen() {
         )}
       </View>
 
-      {/* Emergency Contacts Section */}
-      <View style={styles.section}>
-        <View style={styles.sectionHeader}>
-          <Ionicons name="people" size={20} color={COLORS.primary} />
-          <Text style={styles.sectionTitle}>Emergency Contacts</Text>
-          <TouchableOpacity style={styles.addSmallButton}>
-            <Ionicons name="add" size={18} color={COLORS.primary} />
-            <Text style={styles.addSmallButtonText}>Add</Text>
-          </TouchableOpacity>
-        </View>
-        {emergencyContacts && emergencyContacts.length > 0 ? (
-          <EmergencyContactsList contacts={emergencyContacts} />
-        ) : (
-          <View style={styles.noDataContainer}>
-            <Ionicons name="people-outline" size={24} color={COLORS.warning} />
-            <Text style={styles.noDataText}>No emergency contacts available.</Text>
-            <TouchableOpacity style={styles.addButton}>
-              <Text style={styles.addButtonText}>Add Emergency Contact</Text>
-            </TouchableOpacity>
-          </View>
-        )}
-      </View>
+      {/* Doctor Professional Information Section */}
+      {renderDoctorProfessionalInfo()}
 
-      {/* Medical Records Section */}
-      <View style={styles.section}>
-        <View style={styles.sectionHeader}>
-          <Ionicons name="document-text" size={20} color={COLORS.primary} />
-          <Text style={styles.sectionTitle}>Medical Records</Text>
-          <TouchableOpacity style={styles.addSmallButton}>
-            <Ionicons name="add" size={18} color={COLORS.primary} />
-            <Text style={styles.addSmallButtonText}>Upload</Text>
-          </TouchableOpacity>
-        </View>
-        {medicalRecords && medicalRecords.length > 0 ? (
-          <MedicalRecordsList records={medicalRecords} />
-        ) : (
-          <View style={styles.noDataContainer}>
-            <Ionicons name="folder-open-outline" size={24} color={COLORS.warning} />
-            <Text style={styles.noDataText}>No medical records available.</Text>
-            <TouchableOpacity style={styles.addButton}>
-              <Text style={styles.addButtonText}>Upload Medical Record</Text>
-            </TouchableOpacity>
+      {/* Patient-Specific Sections */}
+      {profile && profile.userType === 'patient' && (
+        <>
+          {/* Emergency Contacts Section */}
+          <View style={styles.section}>
+            <View style={styles.sectionHeader}>
+              <Ionicons name="people" size={20} color={COLORS.primary} />
+              <Text style={styles.sectionTitle}>Emergency Contacts</Text>
+              <TouchableOpacity style={styles.addSmallButton}>
+                <Ionicons name="add" size={18} color={COLORS.primary} />
+                <Text style={styles.addSmallButtonText}>Add</Text>
+              </TouchableOpacity>
+            </View>
+            {emergencyContacts && emergencyContacts.length > 0 ? (
+              <EmergencyContactsList contacts={emergencyContacts} />
+            ) : (
+              <View style={styles.noDataContainer}>
+                <Ionicons name="people-outline" size={24} color={COLORS.warning} />
+                <Text style={styles.noDataText}>No emergency contacts available.</Text>
+                <TouchableOpacity style={styles.addButton}>
+                  <Text style={styles.addButtonText}>Add Emergency Contact</Text>
+                </TouchableOpacity>
+              </View>
+            )}
           </View>
-        )}
-      </View>
+
+          {/* Medical Records Section */}
+          <View style={styles.section}>
+            <View style={styles.sectionHeader}>
+              <Ionicons name="document-text" size={20} color={COLORS.primary} />
+              <Text style={styles.sectionTitle}>Medical Records</Text>
+              <TouchableOpacity style={styles.addSmallButton}>
+                <Ionicons name="add" size={18} color={COLORS.primary} />
+                <Text style={styles.addSmallButtonText}>Upload</Text>
+              </TouchableOpacity>
+            </View>
+            {medicalRecords && medicalRecords.length > 0 ? (
+              <MedicalRecordsList records={medicalRecords} />
+            ) : (
+              <View style={styles.noDataContainer}>
+                <Ionicons name="folder-open-outline" size={24} color={COLORS.warning} />
+                <Text style={styles.noDataText}>No medical records available.</Text>
+                <TouchableOpacity style={styles.addButton}>
+                  <Text style={styles.addButtonText}>Upload Medical Record</Text>
+                </TouchableOpacity>
+              </View>
+            )}
+          </View>
+        </>
+      )}
+
+      {/* Admin Dashboard Section */}
+      {renderAdminDashboard()}
       
       {/* Footer */}
       <View style={styles.footer}>
@@ -303,6 +408,23 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: COLORS.primary,
     marginLeft: 4,
+  },
+  infoContainer: {
+    padding: 16,
+  },
+  infoItem: {
+    paddingVertical: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.border,
+  },
+  infoLabel: {
+    fontSize: 14,
+    color: COLORS.textPrimary,
+  },
+  infoSubLabel: {
+    fontSize: 12,
+    color: COLORS.textSecondary,
+    marginTop: 4,
   },
   loadingContainer: {
     flex: 1,
