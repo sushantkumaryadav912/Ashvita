@@ -14,7 +14,7 @@ const COLORS = {
 };
 
 // Base URL for the Azure backend API
-const API_BASE_URL = 'https://localhost:5000/api';
+const API_BASE_URL = process.env.API_BASE_URL || 'https://your-api-url.com/api';
 
 export default function DoctorNotesList() {
   const [notes, setNotes] = useState([]);
