@@ -1,15 +1,16 @@
 import React from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
 const COLORS = {
-  success: '#28a745',
-  warning: '#ffa500',
-  error: '#ff4d4d',
-  statusNormal: '#e6ffed',
-  statusWarning: '#fff5e6',
-  statusCritical: '#ffe6e6',
-  textPrimary: '#333',
+  success: '#06D6A0',
+  warning: '#FFD166',
+  error: '#EF476F',
+  statusNormal: '#E7F9F1',
+  statusWarning: '#FFF6E9',
+  statusCritical: '#FFEDF1',
+  textPrimary: '#2B2D42',
+  cardBackground: '#FFFFFF',
 };
 
 export default function HealthStatusCard({ status, message }) {
@@ -45,13 +46,13 @@ export default function HealthStatusCard({ status, message }) {
   const getStatusIcon = () => {
     switch (safeStatus) {
       case 'normal':
-        return <Ionicons name="checkmark-circle" size={24} color={COLORS.success} />;
+        return <Ionicons name="checkmark-circle" size={28} color={COLORS.success} />;
       case 'warning':
-        return <Ionicons name="warning" size={24} color={COLORS.warning} />;
+        return <Ionicons name="warning" size={28} color={COLORS.warning} />;
       case 'critical':
-        return <Ionicons name="alert-circle" size={24} color={COLORS.error} />;
+        return <Ionicons name="alert-circle" size={28} color={COLORS.error} />;
       default:
-        return <Ionicons name="checkmark-circle" size={24} color={COLORS.success} />;
+        return <Ionicons name="checkmark-circle" size={28} color={COLORS.success} />;
     }
   };
 
@@ -68,16 +69,46 @@ export default function HealthStatusCard({ status, message }) {
     }
   };
 
+  const getFeedbackText = () => {
+    switch (safeStatus) {
+      case 'normal':
+        return 'Everything looks good!';
+      case 'warning':
+        return 'Attention needed';
+      case 'critical':
+        return 'Immediate action required';
+      default:
+        return 'Status information';
+    }
+  };
+
   return (
     <View style={[styles.container, { backgroundColor: getStatusBackground() }]}>
-      <View style={styles.iconContainer}>
-        {getStatusIcon()}
-      </View>
       <View style={styles.contentContainer}>
-        <Text style={[styles.statusText, { color: getStatusColor() }]}>
-          {getStatusText()}
-        </Text>
+        <View style={styles.headerRow}>
+          <View style={styles.statusIconContainer}>
+            {getStatusIcon()}
+          </View>
+          <View style={styles.statusTextContainer}>
+            <Text style={[styles.statusText, { color: getStatusColor() }]}>
+              {getStatusText()}
+            </Text>
+            <Text style={styles.feedbackText}>{getFeedbackText()}</Text>
+          </View>
+          <TouchableOpacity style={styles.moreButton}>
+            <Ionicons name="ellipsis-vertical" size={20} color="#8D99AE" />
+          </TouchableOpacity>
+        </View>
+        
         <Text style={styles.messageText}>{safeMessage}</Text>
+        
+        <TouchableOpacity 
+          style={[styles.actionButton, { backgroundColor: getStatusColor() }]}
+          activeOpacity={0.8}
+        >
+          <Text style={styles.actionButtonText}>View Details</Text>
+          <Ionicons name="arrow-forward" size={16} color="#FFFFFF" />
+        </TouchableOpacity>
       </View>
     </View>
   );
@@ -85,24 +116,69 @@ export default function HealthStatusCard({ status, message }) {
 
 const styles = StyleSheet.create({
   container: {
-    flexDirection: 'row',
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 24,
-  },
-  iconContainer: {
-    marginRight: 12,
+    borderRadius: 16,
+    overflow: 'hidden',
+    marginBottom: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 2,
   },
   contentContainer: {
+    padding: 20,
+  },
+  headerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  statusIconContainer: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: COLORS.cardBackground,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
+  },
+  statusTextContainer: {
     flex: 1,
   },
   statusText: {
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: 'bold',
-    marginBottom: 4,
+    marginBottom: 2,
   },
-  messageText: {
+  feedbackText: {
     fontSize: 14,
     color: COLORS.textPrimary,
+    opacity: 0.7,
+  },
+  moreButton: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  messageText: {
+    fontSize: 15,
+    color: COLORS.textPrimary,
+    lineHeight: 22,
+    marginBottom: 20,
+  },
+  actionButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 8,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+  },
+  actionButtonText: {
+    color: '#FFFFFF',
+    fontWeight: '600',
+    marginRight: 8,
   },
 });

@@ -1,20 +1,44 @@
 import React, { useState, useEffect } from 'react';
-import { ScrollView, View, Text, StyleSheet, ActivityIndicator } from 'react-native';
+import { 
+  ScrollView, 
+  View, 
+  Text, 
+  StyleSheet, 
+  ActivityIndicator, 
+  TouchableOpacity, 
+  SafeAreaView,
+  StatusBar
+} from 'react-native';
 import axios from 'axios';
+import { Ionicons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
+
+// Components
 import AlertsSection from '../components/AlertsSection';
 import DoctorNotesList from '../components/DoctorNotesList';
 import HealthStatusCard from '../components/HealthStatusCard';
 import VitalsCard from '../components/VitalsCard';
 
+// Design system
 const COLORS = {
-  background: '#f5f5f5',
-  textPrimary: '#333',
-  textSecondary: '#666',
-  primary: '#007bff',
-  error: '#ff4d4d',
+  primary: '#4361EE',
+  primaryDark: '#3A56D4',
+  primaryLight: '#EBF0FF',
+  secondary: '#4CC9F0',
+  success: '#06D6A0',
+  warning: '#FFD166',
+  error: '#EF476F',
+  background: '#F7F9FC',
+  cardBackground: '#FFFFFF',
+  textPrimary: '#2B2D42',
+  textSecondary: '#8D99AE',
+  border: '#E9ECEF',
+  statusNormal: '#E7F9F1',
+  statusWarning: '#FFF6E9',
+  statusCritical: '#FFEDF1',
 };
 
-// Base URL for the Azure backend API (replace with your actual API URL)
+// Base URL for the Azure backend API
 const API_BASE_URL = 'https://localhost:5000/api';
 
 export default function DashboardScreen() {
@@ -23,116 +47,197 @@ export default function DashboardScreen() {
   const [healthStatus, setHealthStatus] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [refreshing, setRefreshing] = useState(false);
+
+  const fetchData = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+
+      // Fetch all data concurrently
+      const [vitalsResponse, alertsResponse, healthStatusResponse] = await Promise.all([
+        axios.get(`${API_BASE_URL}/vitals`),
+        axios.get(`${API_BASE_URL}/alerts`),
+        axios.get(`${API_BASE_URL}/health-status`),
+      ]);
+
+      setVitals(vitalsResponse.data);
+      setAlerts(alertsResponse.data);
+      setHealthStatus(healthStatusResponse.data);
+    } catch (err) {
+      setError('Failed to fetch data. Please try again later.');
+      console.error('Error fetching data:', err);
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  };
 
   useEffect(() => {
-    const fetchData = async () => {
-      try {
-        setLoading(true);
-        setError(null);
-
-        // Fetch all data concurrently
-        const [vitalsResponse, alertsResponse, healthStatusResponse] = await Promise.all([
-          axios.get(`${API_BASE_URL}/vitals`),
-          axios.get(`${API_BASE_URL}/alerts`),
-          axios.get(`${API_BASE_URL}/health-status`),
-        ]);
-
-        setVitals(vitalsResponse.data);
-        setAlerts(alertsResponse.data);
-        setHealthStatus(healthStatusResponse.data);
-      } catch (err) {
-        setError('Failed to fetch data. Please try again later.');
-        console.error('Error fetching data:', err);
-      } finally {
-        setLoading(false);
-      }
-    };
-
     fetchData();
   }, []);
 
-  if (loading) {
-    return (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color={COLORS.primary} />
-        <Text style={styles.loadingText}>Loading...</Text>
-      </View>
-    );
-  }
+  const handleRefresh = () => {
+    setRefreshing(true);
+    fetchData();
+  };
 
-  if (error) {
+  if (loading && !refreshing) {
     return (
-      <View style={styles.errorContainer}>
-        <Text style={styles.errorText}>{error}</Text>
-      </View>
+      <SafeAreaView style={styles.loadingContainer}>
+        <StatusBar barStyle="dark-content" backgroundColor={COLORS.background} />
+        <ActivityIndicator size="large" color={COLORS.primary} />
+        <Text style={styles.loadingText}>Loading your health data...</Text>
+      </SafeAreaView>
     );
   }
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.contentContainer}>
-      <View style={styles.header}>
-        <Text style={styles.headerTitle}>Health Dashboard</Text>
-        <Text style={styles.headerSubtitle}>Real-time health overview</Text>
+    <SafeAreaView style={styles.safeArea}>
+      <StatusBar barStyle="light-content" backgroundColor={COLORS.primaryDark} />
+      
+      <View style={styles.headerContainer}>
+        <LinearGradient
+          colors={[COLORS.primary, COLORS.primaryDark]}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 0 }}
+          style={styles.headerGradient}
+        >
+          <View style={styles.headerContent}>
+            <View>
+              <Text style={styles.headerTitle}>Health Dashboard</Text>
+              <Text style={styles.headerSubtitle}>Your daily health overview</Text>
+            </View>
+            
+            <TouchableOpacity 
+              style={styles.refreshButton} 
+              onPress={handleRefresh}
+              disabled={refreshing}
+            >
+              {refreshing ? (
+                <ActivityIndicator size="small" color="#FFFFFF" />
+              ) : (
+                <Ionicons name="refresh" size={22} color="#FFFFFF" />
+              )}
+            </TouchableOpacity>
+          </View>
+        </LinearGradient>
       </View>
 
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Health Status</Text>
-        {healthStatus ? (
-          <HealthStatusCard status={healthStatus.status} message={healthStatus.message} />
-        ) : (
-          <Text style={styles.noDataText}>No health status available.</Text>
+      <ScrollView 
+        style={styles.container} 
+        contentContainerStyle={styles.contentContainer}
+        showsVerticalScrollIndicator={false}
+      >
+        {error && (
+          <View style={styles.errorContainer}>
+            <Ionicons name="alert-circle" size={24} color={COLORS.error} />
+            <Text style={styles.errorText}>{error}</Text>
+            <TouchableOpacity 
+              style={styles.retryButton}
+              onPress={fetchData}
+            >
+              <Text style={styles.retryButtonText}>Retry</Text>
+            </TouchableOpacity>
+          </View>
         )}
-      </View>
 
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Vitals</Text>
-        <View style={styles.vitalsContainer}>
-          {vitals.length > 0 ? (
-            vitals.map((vital, index) => (
-              <VitalsCard
-                key={index}
-                title={vital.title}
-                value={vital.value}
-                unit={vital.unit}
-                icon={vital.icon}
-                color={vital.color}
-                trend={vital.trend}
-              />
-            ))
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Health Status</Text>
+          {healthStatus ? (
+            <HealthStatusCard status={healthStatus.status} message={healthStatus.message} />
           ) : (
-            <Text style={styles.noDataText}>No vitals data available.</Text>
+            <View style={styles.noDataContainer}>
+              <Ionicons name="medical" size={24} color={COLORS.textSecondary} />
+              <Text style={styles.noDataText}>No health status available.</Text>
+            </View>
           )}
         </View>
-      </View>
 
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Alerts</Text>
-        {alerts.length > 0 ? (
-          <AlertsSection alerts={alerts} />
-        ) : (
-          <Text style={styles.noDataText}>No alerts available.</Text>
-        )}
-      </View>
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Vitals</Text>
+          {vitals.length > 0 ? (
+            <View style={styles.vitalsContainer}>
+              {vitals.map((vital, index) => (
+                <VitalsCard
+                  key={index}
+                  title={vital.title}
+                  value={vital.value}
+                  unit={vital.unit}
+                  icon={vital.icon}
+                  color={vital.color}
+                  trend={vital.trend}
+                />
+              ))}
+            </View>
+          ) : (
+            <View style={styles.noDataContainer}>
+              <Ionicons name="pulse" size={24} color={COLORS.textSecondary} />
+              <Text style={styles.noDataText}>No vitals data available.</Text>
+            </View>
+          )}
+        </View>
 
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Recent Doctor Notes</Text>
-        <DoctorNotesList />
-      </View>
-    </ScrollView>
+        <View style={styles.section}>
+          <View style={styles.sectionTitleRow}>
+            <Text style={styles.sectionTitle}>Alerts</Text>
+            {alerts.length > 0 && (
+              <View style={styles.alertBadge}>
+                <Text style={styles.alertBadgeText}>{alerts.length}</Text>
+              </View>
+            )}
+          </View>
+          
+          {alerts.length > 0 ? (
+            <AlertsSection alerts={alerts} />
+          ) : (
+            <View style={styles.noDataContainer}>
+              <Ionicons name="notifications" size={24} color={COLORS.textSecondary} />
+              <Text style={styles.noDataText}>No alerts available.</Text>
+            </View>
+          )}
+        </View>
+
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Recent Doctor Notes</Text>
+          <DoctorNotesList />
+        </View>
+      </ScrollView>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
+  safeArea: {
     flex: 1,
     backgroundColor: COLORS.background,
   },
+  container: {
+    flex: 1,
+    backgroundColor: COLORS.background,
+    
+  },
   contentContainer: {
     paddingHorizontal: 16,
+    paddingBottom: 32,
+  
   },
-  header: {
-    paddingVertical: 20,
-    backgroundColor: COLORS.primary,
+  headerContainer: {
+    width: '100%',
+    height: 110,
+    marginTop: 0,
+  },
+  headerGradient: {
+    flex: 1,
+    paddingHorizontal: 16,
+    paddingTop: 10,
+    paddingBottom: 20,
+  },
+  headerContent: {
+    flex: 1, 
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
   },
   headerTitle: {
     fontSize: 24,
@@ -140,18 +245,44 @@ const styles = StyleSheet.create({
     color: '#fff',
   },
   headerSubtitle: {
-    fontSize: 16,
+    fontSize: 14,
     color: '#e6f3ff',
     marginTop: 4,
   },
+  refreshButton: {
+    height: 40,
+    width: 40,
+    borderRadius: 20,
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
   section: {
-    paddingVertical: 16,
+    marginTop: 16,
+    marginBottom: 8,
+  },
+  sectionTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 12,
   },
   sectionTitle: {
     fontSize: 18,
-    fontWeight: '600',
+    fontWeight: '700',
     color: COLORS.textPrimary,
     marginBottom: 12,
+  },
+  alertBadge: {
+    backgroundColor: COLORS.error,
+    borderRadius: 12,
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    marginLeft: 8,
+  },
+  alertBadgeText: {
+    color: '#FFFFFF',
+    fontSize: 12,
+    fontWeight: 'bold',
   },
   vitalsContainer: {
     flexDirection: 'row',
@@ -165,25 +296,50 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.background,
   },
   loadingText: {
-    marginTop: 8,
+    marginTop: 16,
     fontSize: 16,
     color: COLORS.textPrimary,
   },
   errorContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: COLORS.background,
+    backgroundColor: COLORS.statusCritical,
+    borderRadius: 12,
     padding: 16,
+    marginVertical: 8,
+    alignItems: 'center',
   },
   errorText: {
-    fontSize: 16,
+    fontSize: 14,
     color: COLORS.error,
     textAlign: 'center',
+    marginTop: 8,
+    marginBottom: 12,
+  },
+  retryButton: {
+    backgroundColor: COLORS.error,
+    paddingHorizontal: 24,
+    paddingVertical: 8,
+    borderRadius: 8,
+  },
+  retryButtonText: {
+    color: '#FFFFFF',
+    fontWeight: '600',
+  },
+  noDataContainer: {
+    backgroundColor: COLORS.cardBackground,
+    borderRadius: 12,
+    padding: 24,
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 2,
   },
   noDataText: {
     fontSize: 14,
     color: COLORS.textSecondary,
     textAlign: 'center',
+    marginTop: 8,
   },
 });
