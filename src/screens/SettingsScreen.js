@@ -1,913 +1,333 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
   StyleSheet,
-  Switch,
   TouchableOpacity,
   ScrollView,
-  Pressable,
-  useColorScheme,
-  ActivityIndicator,
-  Alert,
-  SafeAreaView,
+  Switch,
+  Platform,
   StatusBar,
-  TextInput,
+  Modal,
+  Alert,
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import Slider from '@react-native-community/slider';
 import { Ionicons } from '@expo/vector-icons';
-import debounce from 'lodash.debounce';
 
-// Simplified i18n-like translations
+// Translations
 const translations = {
   en: {
     settings: 'Settings',
-    appearance: 'Appearance',
-    general: 'General',
-    theme: 'Theme',
-    fontSize: 'Font Size',
-    darkMode: 'Dark Mode',
-    language: 'Language',
     notifications: 'Notifications',
-    dataSaving: 'Data Saving',
-    account: 'Account Settings',
     privacy: 'Privacy',
-    reset: 'Reset All Settings',
-    save: 'Save Changes',
-    username: 'Username',
-    email: 'Email',
-    shareAnalytics: 'Share Analytics',
-    personalizedAds: 'Personalized Ads',
-    success: 'Success',
-    error: 'Error',
-    resetConfirm: 'Are you sure you want to reset all settings to default?',
+    language: 'Language',
+    backup: 'Backup',
+    about: 'About',
+    resetSettings: 'Reset Settings',
+    resetConfirm: 'Are you sure you want to reset all settings?',
+    cancel: 'Cancel',
     settingsSaved: 'Settings saved successfully',
     settingsError: 'Failed to save settings',
-    accountSaved: 'Account information saved',
-    accountError: 'Failed to save account information',
-    privacySaved: 'Privacy settings saved',
-    privacyError: 'Failed to save privacy settings',
-    invalidEmail: 'Please enter a valid email address',
-    invalidUsername: 'Username must be at least 3 characters',
+    english: 'English',
+    spanish: 'Español',
   },
   es: {
     settings: 'Configuración',
-    appearance: 'Apariencia',
-    general: 'General',
-    theme: 'Tema',
-    fontSize: 'Tamaño de fuente',
-    darkMode: 'Modo oscuro',
-    language: 'Idioma',
     notifications: 'Notificaciones',
-    dataSaving: 'Ahorro de datos',
-    account: 'Configuración de cuenta',
     privacy: 'Privacidad',
-    reset: 'Restablecer todas las configuraciones',
-    save: 'Guardar cambios',
-    username: 'Nombre de usuario',
-    email: 'Correo electrónico',
-    shareAnalytics: 'Compartir análisis',
-    personalizedAds: 'Anuncios personalizados',
-    success: 'Éxito',
-    error: 'Error',
-    resetConfirm: '¿Estás seguro de que quieres restablecer todas las configuraciones a los valores predeterminados?',
+    language: 'Idioma',
+    backup: 'Copia de Seguridad',
+    about: 'Acerca de',
+    resetSettings: 'Restablecer Configuraciones',
+    resetConfirm: '¿Estás seguro de querer restablecer todas las configuraciones?',
+    cancel: 'Cancelar',
     settingsSaved: 'Configuraciones guardadas exitosamente',
     settingsError: 'No se pudieron guardar las configuraciones',
-    accountSaved: 'Información de cuenta guardada',
-    accountError: 'No se pudo guardar la información de cuenta',
-    privacySaved: 'Configuraciones de privacidad guardadas',
-    privacyError: 'No se pudieron guardar las configuraciones de privacidad',
-    invalidEmail: 'Por favor, introduce una dirección de correo válida',
-    invalidUsername: 'El nombre de usuario debe tener al menos 3 caracteres',
-  },
-  fr: {
-    settings: 'Paramètres',
-    appearance: 'Apparence',
-    general: 'Général',
-    theme: 'Thème',
-    fontSize: 'Taille de la police',
-    darkMode: 'Mode sombre',
-    language: 'Langue',
-    notifications: 'Notifications',
-    dataSaving: 'Économie de données',
-    account: 'Paramètres du compte',
-    privacy: 'Confidentialité',
-    reset: 'Réinitialiser tous les paramètres',
-    save: 'Enregistrer les modifications',
-    username: 'Nom d’utilisateur',
-    email: 'Email',
-    shareAnalytics: 'Partager les analyses',
-    personalizedAds: 'Annonces personnalisées',
-    success: 'Succès',
-    error: 'Erreur',
-    resetConfirm: 'Êtes-vous sûr de vouloir réinitialiser tous les paramètres par défaut ?',
-    settingsSaved: 'Paramètres enregistrés avec succès',
-    settingsError: 'Échec de l’enregistrement des paramètres',
-    accountSaved: 'Informations du compte enregistrées',
-    accountError: 'Échec de l’enregistrement des informations du compte',
-    privacySaved: 'Paramètres de confidentialité enregistrés',
-    privacyError: 'Échec de l’enregistrement des paramètres de confidentialité',
-    invalidEmail: 'Veuillez entrer une adresse email valide',
-    invalidUsername: 'Le nom d’utilisateur doit comporter au moins 3 caractères',
+    english: 'Inglés',
+    spanish: 'Español',
   },
 };
-
-// Theme context for app-wide theme management
-const ThemeContext = React.createContext();
-
-// Theme provider component
-export const ThemeProvider = ({ children }) => {
-  const systemTheme = useColorScheme();
-  const [themeMode, setThemeMode] = useState('system');
-  const [language, setLanguage] = useState('en');
-
-  const theme = themeMode === 'system' ? systemTheme : themeMode;
-
-  const colors = {
-    background: theme === 'dark' ? '#121212' : '#f8f9fa',
-    card: theme === 'dark' ? '#1e1e1e' : '#ffffff',
-    text: theme === 'dark' ? '#f1f1f1' : '#333333',
-    secondaryText: theme === 'dark' ? '#a1a1a1' : '#666666',
-    border: theme === 'dark' ? '#2a2a2a' : '#eeeeee',
-    primary: '#007AFF',
-    success: '#4CD964',
-    error: '#FF3B30',
-  };
-
-  return (
-    <ThemeContext.Provider value={{ theme, colors, setThemeMode, language, setLanguage }}>
-      {children}
-    </ThemeContext.Provider>
-  );
-};
-
-// Custom hook to use theme
-const useTheme = () => React.useContext(ThemeContext);
 
 // Settings configuration
-const SETTINGS_CONFIG = {
-  storageKey: 'APP_SETTINGS_V3',
-  languages: [
-    { code: 'en', name: 'English' },
-    { code: 'es', name: 'Español' },
-    { code: 'fr', name: 'Français' },
-  ],
-  sections: [
-    {
-      title: 'appearance',
-      icon: 'color-palette-outline',
-      items: [
-        {
-          id: 'theme',
-          label: 'theme',
-          type: 'select',
-          options: ['System', 'Light', 'Dark'],
-          icon: 'color-palette',
-          description: 'Change app appearance',
-        },
-        {
-          id: 'fontSize',
-          label: 'fontSize',
-          type: 'slider',
-          min: 12,
-          max: 24,
-          step: 2,
-          icon: 'text',
-          description: 'Adjust text size throughout the app',
-        },
-        {
-          id: 'darkMode',
-          label: 'darkMode',
-          type: 'switch',
-          icon: 'moon',
-          description: 'Use dark mode for the app',
-        },
-      ],
-    },
-    {
-      title: 'general',
-      icon: 'settings-outline',
-      items: [
-        {
-          id: 'language',
-          label: 'language',
-          type: 'select',
-          options: ['English', 'Español', 'Français'],
-          icon: 'globe',
-          description: 'Change app language',
-        },
-        {
-          id: 'notifications',
-          label: 'notifications',
-          type: 'switch',
-          icon: 'notifications',
-          description: 'Enable push notifications',
-        },
-        {
-          id: 'dataSaving',
-          label: 'dataSaving',
-          type: 'switch',
-          icon: 'save',
-          description: 'Reduce data usage by limiting high-quality content',
-        },
-        {
-          id: 'account',
-          label: 'account',
-          type: 'navigation',
-          icon: 'person',
-          description: 'Manage your account details',
-        },
-        {
-          id: 'privacy',
-          label: 'privacy',
-          type: 'navigation',
-          icon: 'shield',
-          description: 'Manage privacy settings and data usage',
-        },
-      ],
-    },
-  ],
-};
+const SETTING_ITEMS = [
+  { id: '1', icon: 'notifications-outline', title: 'notifications', hasSwitch: true },
+  { id: '2', icon: 'lock-closed-outline', title: 'privacy', hasSwitch: false },
+  { id: '3', icon: 'language-outline', title: 'language', hasSwitch: false },
+  { id: '4', icon: 'cloud-outline', title: 'backup', hasSwitch: true },
+  { id: '5', icon: 'information-circle-outline', title: 'about', hasSwitch: false },
+];
 
-// Main Settings Screen Component
-export function SettingsScreen({ navigation }) {
-  const { theme, colors, setThemeMode, language, setLanguage } = useTheme();
+const SettingsScreen = ({ navigation }) => {
   const [settings, setSettings] = useState({
-    theme: 'system',
-    fontSize: 16,
-    language: 'en',
     notifications: true,
-    darkMode: false,
-    dataSaving: false,
+    language: 'en',
+    backup: false,
   });
-  const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
-  const t = translations[language] || translations.en;
+  const [selectModal, setSelectModal] = useState(null);
+  const t = translations[settings.language] || translations.en;
 
-  // Load settings with retry logic
-  const loadSettings = useCallback(async (retries = 3) => {
-    setLoading(true);
-    try {
-      const stored = await AsyncStorage.getItem(SETTINGS_CONFIG.storageKey);
-      if (stored) {
-        const parsedSettings = JSON.parse(stored);
-        setSettings(parsedSettings);
-        setThemeMode(parsedSettings.theme.toLowerCase());
-        setLanguage(parsedSettings.language);
-      }
-    } catch (error) {
-      if (retries > 0) {
-        setTimeout(() => loadSettings(retries - 1), 1000);
-        return;
-      }
-      console.error('Failed to load settings:', error);
-      Alert.alert(t.error, t.settingsError);
-    } finally {
-      setLoading(false);
-    }
-  }, [setThemeMode, setLanguage, t]);
-
+  // Load settings
   useEffect(() => {
-    loadSettings();
-  }, [loadSettings]);
-
-  // Debounced save settings
-  const saveSettings = useCallback(
-    debounce(async (newSettings) => {
-      setSaving(true);
+    const loadSettings = async () => {
       try {
-        await AsyncStorage.setItem(
-          SETTINGS_CONFIG.storageKey,
-          JSON.stringify(newSettings)
-        );
-        setSettings(newSettings);
-        if (newSettings.theme !== settings.theme) {
-          setThemeMode(newSettings.theme.toLowerCase());
-        }
-        if (newSettings.language !== settings.language) {
-          setLanguage(newSettings.language);
-          Alert.alert(t.success, t.settingsSaved);
+        const stored = await AsyncStorage.getItem('APP_SETTINGS');
+        if (stored) {
+          const parsed = JSON.parse(stored);
+          setSettings(parsed);
         }
       } catch (error) {
-        console.error('Failed to save settings:', error);
-        Alert.alert(t.error, t.settingsError);
-      } finally {
-        setSaving(false);
+        Alert.alert(t.settingsError, t.settingsError);
       }
-    }, 500),
-    [settings, setThemeMode, setLanguage, t]
-  );
+    };
+    loadSettings();
+  }, [t]);
 
-  // Handle setting changes
-  const handleChange = (key, value) => {
+  // Save settings
+  const saveSettings = async (newSettings) => {
+    try {
+      await AsyncStorage.setItem('APP_SETTINGS', JSON.stringify(newSettings));
+      setSettings(newSettings);
+      Alert.alert(t.settingsSaved, t.settingsSaved);
+    } catch (error) {
+      Alert.alert(t.settingsError, t.settingsError);
+    }
+  };
+
+  // Handle setting toggle
+  const handleToggle = (key, value) => {
     const newSettings = { ...settings, [key]: value };
-    if (key === 'darkMode') {
-      newSettings.theme = value ? 'dark' : 'light';
-    }
-    if (key === 'theme' && value.toLowerCase() !== 'system') {
-      newSettings.darkMode = value.toLowerCase() === 'dark';
-    }
     saveSettings(newSettings);
   };
 
   // Reset settings
   const resetSettings = () => {
     Alert.alert(
-      t.reset,
+      t.resetSettings,
       t.resetConfirm,
       [
-        { text: 'Cancel', style: 'cancel' },
+        { text: t.cancel, style: 'cancel' },
         {
-          text: t.reset,
+          text: t.resetSettings,
           style: 'destructive',
-          onPress: async () => {
+          onPress: () => {
             const defaultSettings = {
-              theme: 'system',
-              fontSize: 16,
-              language: 'en',
               notifications: true,
-              darkMode: false,
-              dataSaving: false,
+              language: 'en',
+              backup: false,
             };
-            await saveSettings(defaultSettings);
-            setThemeMode('system');
-            setLanguage('en');
-            Alert.alert(t.success, t.settingsSaved);
+            saveSettings(defaultSettings);
           },
         },
       ]
     );
   };
 
-  // Dynamic styles
-  const dynamicStyles = StyleSheet.create({
-    container: {
-      flex: 1,
-      backgroundColor: colors.background,
-      padding: 16,
-    },
-    section: {
-      marginBottom: 24,
-    },
-    sectionHeader: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      marginBottom: 12,
-      paddingHorizontal: 8,
-    },
-    sectionIcon: {
-      marginRight: 8,
-      color: colors.primary,
-    },
-    sectionTitle: {
-      fontSize: settings.fontSize + 2,
-      fontWeight: '600',
-      color: colors.text,
-    },
-    sectionContent: {
-      backgroundColor: colors.card,
-      borderRadius: 12,
-      overflow: 'hidden',
-      shadowColor: '#000',
-      shadowOpacity: theme === 'dark' ? 0.3 : 0.05,
-      shadowRadius: 8,
-      shadowOffset: { width: 0, height: 4 },
-      elevation: 5,
-    },
-    itemContainer: {
-      borderBottomWidth: 1,
-      borderBottomColor: colors.border,
-    },
-    itemContent: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      paddingVertical: 16,
-      paddingHorizontal: 16,
-    },
-    iconContainer: {
-      width: 36,
-      height: 36,
-      borderRadius: 18,
-      backgroundColor: colors.primary + '20',
-      justifyContent: 'center',
-      alignItems: 'center',
-      marginRight: 16,
-    },
-    itemText: {
-      flex: 1,
-    },
-    itemLabel: {
-      fontSize: settings.fontSize,
-      color: colors.text,
-      fontWeight: '500',
-    },
-    itemDescription: {
-      fontSize: settings.fontSize - 2,
-      color: colors.secondaryText,
-      marginTop: 4,
-    },
-    selectValue: {
-      color: colors.primary,
-      fontSize: settings.fontSize,
-      fontWeight: '500',
-    },
-    slider: {
-      width: 150,
-      height: 40,
-    },
-    loadingContainer: {
-      flex: 1,
-      justifyContent: 'center',
-      alignItems: 'center',
-      backgroundColor: colors.background,
-    },
-    fontSizeContainer: {
-      flexDirection: 'row',
-      alignItems: 'center',
-    },
-    sliderValue: {
-      color: colors.primary,
-      fontSize: settings.fontSize - 2,
-      fontWeight: '500',
-      marginLeft: 8,
-    },
-    headerRight: {
-      marginRight: 16,
-    },
-    resetButton: {
-      backgroundColor: colors.error,
-      borderRadius: 8,
-      padding: 12,
-      alignItems: 'center',
-      margin: 16,
-    },
-    resetButtonText: {
-      color: '#fff',
-      fontSize: settings.fontSize,
-      fontWeight: '600',
-    },
-  });
+  // Render language select modal
+  const renderSelectModal = () => {
+    if (!selectModal) return null;
+    const options = ['en', 'es'];
+    const optionLabels = [t.english, t.spanish];
 
-  // Set navigation options
-  React.useLayoutEffect(() => {
-    navigation.setOptions({
-      headerTitle: t.settings,
-      headerRight: () => (
-        saving ? (
-          <ActivityIndicator color={colors.primary} style={dynamicStyles.headerRight} />
-        ) : null
-      ),
-      headerStyle: {
-        backgroundColor: colors.card,
-      },
-      headerTintColor: colors.text,
-    });
-  }, [navigation, saving, colors, t]);
-
-  if (loading) {
     return (
-      <View style={dynamicStyles.loadingContainer}>
-        <ActivityIndicator size="large" color={colors.primary} />
-      </View>
-    );
-  }
-
-  // Setting Item Component
-  const SettingItem = ({ item, section }) => {
-    const renderControl = () => {
-      switch (item.type) {
-        case 'switch':
-          return (
-            <Switch
-              value={settings[item.id]}
-              onValueChange={(val) => handleChange(item.id, val)}
-              trackColor={{ true: colors.primary, false: '#ccc' }}
-              thumbColor={settings[item.id] ? '#ffffff' : '#f4f3f4'}
-              ios_backgroundColor="#3e3e3e"
-            />
-          );
-
-        case 'select':
-          let displayValue;
-          if (item.id === 'language') {
-            const languageOption = SETTINGS_CONFIG.languages.find(lang => lang.code === settings[item.id]);
-            displayValue = languageOption ? languageOption.name : settings[item.id];
-          } else {
-            displayValue = settings[item.id].charAt(0).toUpperCase() + settings[item.id].slice(1);
-          }
-
-          return (
+      <Modal
+        animationType="fade"
+        transparent={true}
+        visible={!!selectModal}
+        onRequestClose={() => setSelectModal(null)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            {options.map((option, index) => (
+              <TouchableOpacity
+                key={option}
+                style={styles.modalOption}
+                onPress={() => {
+                  handleToggle(selectModal.title, option);
+                  setSelectModal(null);
+                }}
+              >
+                <Text style={styles.modalOptionText}>{optionLabels[index]}</Text>
+                {settings[selectModal.title] === option && (
+                  <Ionicons name="checkmark" size={24} color="#007AFF" />
+                )}
+              </TouchableOpacity>
+            ))}
             <TouchableOpacity
+              style={styles.modalCancel}
+              onPress={() => setSelectModal(null)}
+            >
+              <Text style={styles.modalCancelText}>{t.cancel}</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+    );
+  };
+
+  return (
+    <View style={styles.container}>
+      <StatusBar barStyle="dark-content" backgroundColor="#fff" />
+      {/* Header */}
+      <View style={styles.header}>
+        <Text style={styles.headerTitle}>{t.settings}</Text>
+      </View>
+
+      {/* Settings List */}
+      <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
+        <View style={styles.settingsContainer}>
+          {SETTING_ITEMS.map((item) => (
+            <TouchableOpacity
+              key={item.id}
+              style={styles.settingItem}
               onPress={() => {
-                navigation.navigate('SettingsSelect', {
-                  title: t[item.label],
-                  options: item.options,
-                  selected: settings[item.id],
-                  onSelect: (value) => handleChange(item.id, value.toLowerCase()),
-                });
+                if (item.id === '2') navigation.navigate('Privacy');
+                else if (item.id === '5') navigation.navigate('About');
+                else if (item.hasSwitch) handleToggle(item.title, !settings[item.title]);
+                else setSelectModal(item);
               }}
             >
-              <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                <Text style={dynamicStyles.selectValue}>{displayValue}</Text>
-                <Ionicons name="chevron-forward" size={20} color={colors.primary} style={{ marginLeft: 8 }} />
+              <View style={styles.settingItemContent}>
+                <View style={styles.iconContainer}>
+                  <Ionicons name={item.icon} size={24} color="#007AFF" />
+                </View>
+                <Text style={styles.settingItemTitle}>{t[item.title]}</Text>
               </View>
+              {item.hasSwitch ? (
+                <Switch
+                  trackColor={{ false: '#ccc', true: '#007AFF' }}
+                  thumbColor={Platform.OS === 'ios' ? '#fff' : '#f4f3f4'}
+                  ios_backgroundColor="#ccc"
+                  value={settings[item.title]}
+                  onValueChange={(value) => handleToggle(item.title, value)}
+                />
+              ) : (
+                <Ionicons name="chevron-forward" size={24} color="#666" />
+              )}
             </TouchableOpacity>
-          );
-
-        case 'slider':
-          return (
-            <View style={dynamicStyles.fontSizeContainer}>
-              <Slider
-                style={dynamicStyles.slider}
-                minimumValue={item.min}
-                maximumValue={item.max}
-                step={item.step}
-                value={settings[item.id]}
-                onValueChange={(val) => handleChange(item.id, val)}
-                minimumTrackTintColor={colors.primary}
-                maximumTrackTintColor={colors.border}
-              />
-              <Text style={dynamicStyles.sliderValue}>{settings[item.id]}</Text>
-            </View>
-          );
-
-        case 'navigation':
-          return (
-            <TouchableOpacity
-              onPress={() => navigation.navigate(item.id)}
-            >
-              <Ionicons name="chevron-forward" size={24} color={colors.primary} />
-            </TouchableOpacity>
-          );
-
-        default:
-          return null;
-      }
-    };
-
-    const isLastItem = item.id === section.items[section.items.length - 1].id;
-
-    return (
-      <Pressable
-        style={({ pressed }) => [
-          dynamicStyles.itemContainer,
-          { opacity: pressed ? 0.8 : 1 },
-          isLastItem && { borderBottomWidth: 0 },
-        ]}
-        onPress={() => {
-          if (item.type === 'navigation') {
-            navigation.navigate(item.id);
-          } else if (item.type === 'select') {
-            navigation.navigate('SettingsSelect', {
-              title: t[item.label],
-              options: item.options,
-              selected: settings[item.id],
-              onSelect: (value) => handleChange(item.id, value.toLowerCase()),
-            });
-          }
-        }}
-      >
-        <View style={dynamicStyles.itemContent}>
-          <View style={dynamicStyles.iconContainer}>
-            <Ionicons name={item.icon} size={18} color={colors.primary} />
-          </View>
-          <View style={dynamicStyles.itemText}>
-            <Text style={dynamicStyles.itemLabel}>{t[item.label]}</Text>
-            {item.description && (
-              <Text style={dynamicStyles.itemDescription}>{item.description}</Text>
-            )}
-          </View>
-          {renderControl()}
+          ))}
         </View>
-      </Pressable>
-    );
-  };
-
-  return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }}>
-      <StatusBar
-        barStyle={theme === 'dark' ? 'light-content' : 'dark-content'}
-        backgroundColor={colors.card}
-      />
-      <ScrollView
-        style={dynamicStyles.container}
-        contentContainerStyle={{ paddingBottom: 40 }}
-        showsVerticalScrollIndicator={false}
-      >
-        {SETTINGS_CONFIG.sections.map((section) => (
-          <View key={section.title} style={dynamicStyles.section}>
-            <View style={dynamicStyles.sectionHeader}>
-              <Ionicons name={section.icon} size={20} style={dynamicStyles.sectionIcon} />
-              <Text style={dynamicStyles.sectionTitle}>{t[section.title]}</Text>
-            </View>
-            <View style={dynamicStyles.sectionContent}>
-              {section.items.map((item) => (
-                <SettingItem key={item.id} item={item} section={section} />
-              ))}
-            </View>
-          </View>
-        ))}
-        <TouchableOpacity
-          style={dynamicStyles.resetButton}
-          onPress={resetSettings}
-        >
-          <Text style={dynamicStyles.resetButtonText}>{t.reset}</Text>
-        </TouchableOpacity>
       </ScrollView>
-    </SafeAreaView>
-  );
-}
 
-// Settings Select Screen Component
-export function SettingsSelectScreen({ route, navigation }) {
-  const { title, options, selected, onSelect } = route.params;
-  const { colors, language } = useTheme();
-  const t = translations[language] || translations.en;
-
-  const dynamicStyles = StyleSheet.create({
-    container: {
-      flex: 1,
-      backgroundColor: colors.background,
-    },
-    optionContainer: {
-      backgroundColor: colors.card,
-      borderRadius: 12,
-      marginHorizontal: 16,
-      marginTop: 16,
-      overflow: 'hidden',
-    },
-    option: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      justifyContent: 'space-between',
-      padding: 16,
-      borderBottomWidth: 1,
-      borderBottomColor: colors.border,
-    },
-    optionText: {
-      fontSize: 16,
-      color: colors.text,
-    },
-    selectedOption: {
-      color: colors.primary,
-      fontWeight: '600',
-    },
-  });
-
-  React.useLayoutEffect(() => {
-    navigation.setOptions({
-      title,
-      headerStyle: {
-        backgroundColor: colors.card,
-      },
-      headerTintColor: colors.text,
-    });
-  }, [navigation, title, colors]);
-
-  return (
-    <View style={dynamicStyles.container}>
-      <View style={dynamicStyles.optionContainer}>
-        {options.map((option, index) => (
-          <Pressable
-            key={option}
-            style={({ pressed }) => [
-              dynamicStyles.option,
-              { opacity: pressed ? 0.8 : 1 },
-              index === options.length - 1 && { borderBottomWidth: 0 },
-            ]}
-            onPress={() => {
-              onSelect(option);
-              navigation.goBack();
-            }}
-          >
-            <Text
-              style={[
-                dynamicStyles.optionText,
-                option.toLowerCase() === selected.toLowerCase() && dynamicStyles.selectedOption,
-              ]}
-            >
-              {option}
-            </Text>
-            {option.toLowerCase() === selected.toLowerCase() && (
-              <Ionicons name="checkmark" size={24} color={colors.primary} />
-            )}
-          </Pressable>
-        ))}
+      {/* Reset Button */}
+      <View style={styles.resetButton}>
+        <TouchableOpacity onPress={resetSettings} style={styles.resetButtonInner}>
+          <Ionicons name="refresh" size={24} color="#fff" />
+          <Text style={styles.resetButtonText}>{t.resetSettings}</Text>
+        </TouchableOpacity>
       </View>
+
+      {renderSelectModal()}
     </View>
   );
-}
+};
 
-// Account Settings Screen
-export function AccountSettingsScreen({ navigation }) {
-  const { colors, language } = useTheme();
-  const [username, setUsername] = useState('');
-  const [email, setEmail] = useState('');
-  const [saving, setSaving] = useState(false);
-  const t = translations[language] || translations.en;
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: '#fff',
+    paddingTop: Platform.OS === 'ios' ? 50 : 20,
+  },
+  header: {
+    padding: 20,
+    alignItems: 'center',
+    backgroundColor: '#f8f9fa',
+  },
+  headerTitle: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: '#333',
+  },
+  scrollView: {
+    flex: 1,
+  },
+  settingsContainer: {
+    padding: 16,
+  },
+  settingItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    padding: 16,
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: '#eee',
+    elevation: 1,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+  },
+  settingItemContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  iconContainer: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#007AFF20',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 16,
+  },
+  settingItemTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#333',
+  },
+  resetButton: {
+    margin: 16,
+    borderRadius: 12,
+    overflow: 'hidden',
+  },
+  resetButtonInner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 12,
+    backgroundColor: '#007AFF',
+  },
+  resetButtonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '600',
+    marginLeft: 8,
+  },
+  modalOverlay: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+  },
+  modalContent: {
+    width: '80%',
+    padding: 20,
+    borderRadius: 12,
+    backgroundColor: '#fff',
+  },
+  modalOption: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#eee',
+  },
+  modalOptionText: {
+    fontSize: 16,
+    color: '#333',
+  },
+  modalCancel: {
+    marginTop: 16,
+    alignItems: 'center',
+  },
+  modalCancelText: {
+    fontSize: 16,
+    color: '#007AFF',
+    fontWeight: '600',
+  },
+});
 
-  const dynamicStyles = StyleSheet.create({
-    container: {
-      flex: 1,
-      backgroundColor: colors.background,
-      padding: 16,
-    },
-    input: {
-      backgroundColor: colors.card,
-      borderRadius: 8,
-      padding: 12,
-      marginVertical: 8,
-      color: colors.text,
-      borderWidth: 1,
-      borderColor: colors.border,
-    },
-    saveButton: {
-      backgroundColor: colors.primary,
-      borderRadius: 8,
-      padding: 12,
-      alignItems: 'center',
-      marginTop: 16,
-    },
-    saveButtonText: {
-      color: '#fff',
-      fontSize: 16,
-      fontWeight: '600',
-    },
-  });
-
-  const validateInputs = () => {
-    if (username.length < 3) {
-      Alert.alert(t.error, t.invalidUsername);
-      return false;
-    }
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email)) {
-      Alert.alert(t.error, t.invalidEmail);
-      return false;
-    }
-    return true;
-  };
-
-  const saveAccount = async () => {
-    if (!validateInputs()) return;
-    setSaving(true);
-    try {
-      await AsyncStorage.setItem('ACCOUNT_INFO', JSON.stringify({ username, email }));
-      Alert.alert(t.success, t.accountSaved);
-    } catch (error) {
-      console.error('Failed to save account info:', error);
-      Alert.alert(t.error, t.accountError);
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  useEffect(() => {
-    const loadAccount = async () => {
-      try {
-        const stored = await AsyncStorage.getItem('ACCOUNT_INFO');
-        if (stored) {
-          const { username: storedUsername, email: storedEmail } = JSON.parse(stored);
-          setUsername(storedUsername || '');
-          setEmail(storedEmail || '');
-        }
-      } catch (error) {
-        console.error('Failed to load account info:', error);
-      }
-    };
-    loadAccount();
-  }, []);
-
-  React.useLayoutEffect(() => {
-    navigation.setOptions({
-      title: t.account,
-      headerStyle: {
-        backgroundColor: colors.card,
-      },
-      headerTintColor: colors.text,
-    });
-  }, [navigation, colors, t]);
-
-  return (
-    <SafeAreaView style={dynamicStyles.container}>
-      <TextInput
-        style={dynamicStyles.input}
-        value={username}
-        onChangeText={setUsername}
-        placeholder={t.username}
-        placeholderTextColor={colors.secondaryText}
-      />
-      <TextInput
-        style={dynamicStyles.input}
-        value={email}
-        onChangeText={setEmail}
-        placeholder={t.email}
-        placeholderTextColor={colors.secondaryText}
-        keyboardType="email-address"
-      />
-      <TouchableOpacity
-        style={dynamicStyles.saveButton}
-        onPress={saveAccount}
-        disabled={saving}
-      >
-        {saving ? (
-          <ActivityIndicator color="#fff" />
-        ) : (
-          <Text style={dynamicStyles.saveButtonText}>{t.save}</Text>
-        )}
-      </TouchableOpacity>
-    </SafeAreaView>
-  );
-}
-
-// Privacy Settings Screen
-export function PrivacySettingsScreen({ navigation }) {
-  const { colors, language } = useTheme();
-  const [privacySettings, setPrivacySettings] = useState({
-    shareAnalytics: true,
-    personalizedAds: false,
-  });
-  const t = translations[language] || translations.en;
-
-  const dynamicStyles = StyleSheet.create({
-    container: {
-      flex: 1,
-      backgroundColor: colors.background,
-      padding: 16,
-    },
-    itemContainer: {
-      flexDirection: 'row',
-      justifyContent: 'space-between',
-      alignItems: 'center',
-      backgroundColor: colors.card,
-      borderRadius: 8,
-      padding: 16,
-      marginVertical: 8,
-    },
-    itemText: {
-      fontSize: 16,
-      color: colors.text,
-      flex: 1,
-    },
-  });
-
-  const toggleSetting = async (key) => {
-    const newSettings = { ...privacySettings, [key]: !privacySettings[key] };
-    setPrivacySettings(newSettings);
-    try {
-      await AsyncStorage.setItem('PRIVACY_SETTINGS', JSON.stringify(newSettings));
-      Alert.alert(t.success, t.privacySaved);
-    } catch (error) {
-      console.error('Failed to save privacy settings:', error);
-      Alert.alert(t.error, t.privacyError);
-    }
-  };
-
-  useEffect(() => {
-    const loadPrivacySettings = async () => {
-      try {
-        const stored = await AsyncStorage.getItem('PRIVACY_SETTINGS');
-        if (stored) {
-          setPrivacySettings(JSON.parse(stored));
-        }
-      } catch (error) {
-        console.error('Failed to load privacy settings:', error);
-      }
-    };
-    loadPrivacySettings();
-  }, []);
-
-  React.useLayoutEffect(() => {
-    navigation.setOptions({
-      title: t.privacy,
-      headerStyle: {
-        backgroundColor: colors.card,
-      },
-      headerTintColor: colors.text,
-    });
-  }, [navigation, colors, t]);
-
-  return (
-    <SafeAreaView style={dynamicStyles.container}>
-      <View style={dynamicStyles.itemContainer}>
-        <Text style={dynamicStyles.itemText}>{t.shareAnalytics}</Text>
-        <Switch
-          value={privacySettings.shareAnalytics}
-          onValueChange={() => toggleSetting('shareAnalytics')}
-          trackColor={{ true: colors.primary, false: '#ccc' }}
-          thumbColor={privacySettings.shareAnalytics ? '#ffffff' : '#f4f3f4'}
-        />
-      </View>
-      <View style={dynamicStyles.itemContainer}>
-        <Text style={dynamicStyles.itemText}>{t.personalizedAds}</Text>
-        <Switch
-          value={privacySettings.personalizedAds}
-          onValueChange={() => toggleSetting('personalizedAds')}
-          trackColor={{ true: colors.primary, false: '#ccc' }}
-          thumbColor={privacySettings.personalizedAds ? '#ffffff' : '#f4f3f4'}
-        />
-      </View>
-    </SafeAreaView>
-  );
-}
+export default SettingsScreen;

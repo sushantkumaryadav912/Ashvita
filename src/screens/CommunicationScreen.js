@@ -13,7 +13,7 @@ export default function CommunicationScreen() {
       <View style={styles.customHeader}>
         <Text style={styles.title}>Communication</Text>
       </View>
-      <Text style={styles.message}>This feature is under development.</Text>
+      <Text style={styles.message}>This feature is under development. We will be coming soon using GenAI</Text>
     </View>
   );
 }
