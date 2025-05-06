@@ -54,41 +54,51 @@ export default function AlertsSection({ alerts }) {
     }
   };
 
+  // Ensure alerts is an array before mapping
+  const alertsArray = Array.isArray(alerts) ? alerts : [];
+
   return (
     <View style={styles.container}>
-      {alerts.map((alert) => (
-        <TouchableOpacity 
-          key={alert.id} 
-          style={[styles.alertCard, { backgroundColor: getAlertBackground(alert.type) }]}
-          activeOpacity={0.8}
-        >
-          <View style={styles.alertIconContainer}>
-            {getAlertIcon(alert.type)}
-          </View>
-          
-          <View style={styles.alertContent}>
-            <View style={styles.alertHeader}>
-              <Text style={[styles.alertType, { color: getAlertColor(alert.type) }]}>
-                {alert.type.charAt(0).toUpperCase() + alert.type.slice(1)}
-              </Text>
-              <Text style={styles.alertTimestamp}>{alert.timestamp}</Text>
+      {alertsArray.length > 0 ? (
+        alertsArray.map((alert) => (
+          <TouchableOpacity 
+            key={alert.id} 
+            style={[styles.alertCard, { backgroundColor: getAlertBackground(alert.type) }]}
+            activeOpacity={0.8}
+          >
+            <View style={styles.alertIconContainer}>
+              {getAlertIcon(alert.type)}
             </View>
-            <Text style={styles.alertTitle}>{alert.title}</Text>
-            <Text style={styles.alertMessage}>{alert.message}</Text>
             
-            <View style={styles.alertActions}>
-              <TouchableOpacity style={styles.actionButton}>
-                <Text style={[styles.actionText, { color: getAlertColor(alert.type) }]}>Dismiss</Text>
-              </TouchableOpacity>
-              <TouchableOpacity style={styles.actionButton}>
-                <Text style={[styles.actionText, { color: getAlertColor(alert.type) }]}>Details</Text>
-              </TouchableOpacity>
+            <View style={styles.alertContent}>
+              <View style={styles.alertHeader}>
+                <Text style={[styles.alertType, { color: getAlertColor(alert.type) }]}>
+                  {alert.type.charAt(0).toUpperCase() + alert.type.slice(1)}
+                </Text>
+                <Text style={styles.alertTimestamp}>{alert.timestamp}</Text>
+              </View>
+              <Text style={styles.alertTitle}>{alert.title}</Text>
+              <Text style={styles.alertMessage}>{alert.message}</Text>
+              
+              <View style={styles.alertActions}>
+                <TouchableOpacity style={styles.actionButton}>
+                  <Text style={[styles.actionText, { color: getAlertColor(alert.type) }]}>Dismiss</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={styles.actionButton}>
+                  <Text style={[styles.actionText, { color: getAlertColor(alert.type) }]}>Details</Text>
+                </TouchableOpacity>
+              </View>
             </View>
-          </View>
-        </TouchableOpacity>
-      ))}
+          </TouchableOpacity>
+        ))
+      ) : (
+        <View style={styles.noDataContainer}>
+          <Ionicons name="notifications" size={20} color={COLORS.textSecondary} />
+          <Text style={styles.noDataText}>No alerts available.</Text>
+        </View>
+      )}
 
-      {alerts.length > 0 && (
+      {alertsArray.length > 0 && (
         <TouchableOpacity style={styles.viewAllButton}>
           <Text style={styles.viewAllText}>View All Alerts</Text>
           <Ionicons name="chevron-forward" size={16} color="#4361EE" />
@@ -177,5 +187,23 @@ const styles = StyleSheet.create({
     color: '#4361EE',
     fontWeight: '600',
     marginRight: 4,
+  },
+  noDataContainer: {
+    backgroundColor: COLORS.cardBackground,
+    borderRadius: 12,
+    padding: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 5,
+    elevation: 2,
+  },
+  noDataText: {
+    fontSize: 14,
+    color: COLORS.textSecondary,
+    textAlign: 'center',
+    marginTop: 8,
   },
 });

@@ -61,7 +61,10 @@ export default function DashboardScreen() {
         axios.get(`${API_BASE_URL}/health-status`),
       ]);
 
-      setVitals(vitalsResponse.data);
+      // Ensure vitals is an array
+      const vitalsData = Array.isArray(vitalsResponse.data) ? vitalsResponse.data : [];
+      
+      setVitals(vitalsData);
       setAlerts(alertsResponse.data);
       setHealthStatus(healthStatusResponse.data);
     } catch (err) {
@@ -156,7 +159,7 @@ export default function DashboardScreen() {
 
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Vitals</Text>
-          {vitals.length > 0 ? (
+          {Array.isArray(vitals) && vitals.length > 0 ? (
             <View style={styles.vitalsContainer}>
               {vitals.map((vital, index) => (
                 <VitalsCard

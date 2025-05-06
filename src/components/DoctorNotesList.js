@@ -28,7 +28,9 @@ export default function DoctorNotesList() {
         setError(null);
 
         const response = await axios.get(`${API_BASE_URL}/doctor-notes`);
-        setNotes(response.data);
+        // Ensure response.data is an array, default to empty array if not
+        const notesData = Array.isArray(response.data) ? response.data : [];
+        setNotes(notesData);
       } catch (err) {
         setError('Failed to fetch doctor notes.');
         console.error('Error fetching doctor notes:', err);
