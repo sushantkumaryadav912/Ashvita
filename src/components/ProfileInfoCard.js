@@ -9,31 +9,40 @@ const COLORS = {
 };
 
 export default function ProfileInfoCard({ profile }) {
+  const safeProfile = {
+    name: typeof profile?.name === 'string' && profile.name.trim() ? profile.name : 'Not Provided',
+    email: typeof profile?.email === 'string' && profile.email.trim() ? profile.email : 'Not Provided',
+    phone: typeof profile?.phone === 'string' && profile.phone.trim() ? profile.phone : 'Not Provided',
+    dob: typeof profile?.dob === 'string' && profile.dob.trim() ? profile.dob : 'Not Provided',
+    gender: typeof profile?.gender === 'string' && profile.gender.trim() ? profile.gender : 'Not Provided',
+    address: typeof profile?.address === 'string' && profile.address.trim() ? profile.address : 'Not Provided',
+  };
+
   return (
     <View style={styles.sectionContent}>
       <View style={styles.infoItem}>
         <Text style={styles.infoLabel}>Full Name</Text>
-        <Text style={styles.infoValue}>{profile.name}</Text>
+        <Text style={styles.infoValue}>{safeProfile.name}</Text>
       </View>
       <View style={styles.infoItem}>
         <Text style={styles.infoLabel}>Email</Text>
-        <Text style={styles.infoValue}>{profile.email}</Text>
+        <Text style={styles.infoValue}>{safeProfile.email}</Text>
       </View>
       <View style={styles.infoItem}>
         <Text style={styles.infoLabel}>Phone</Text>
-        <Text style={styles.infoValue}>{profile.phone}</Text>
+        <Text style={styles.infoValue}>{safeProfile.phone}</Text>
       </View>
       <View style={styles.infoItem}>
         <Text style={styles.infoLabel}>Date of Birth</Text>
-        <Text style={styles.infoValue}>{profile.dob}</Text>
+        <Text style={styles.infoValue}>{safeProfile.dob}</Text>
       </View>
       <View style={styles.infoItem}>
         <Text style={styles.infoLabel}>Gender</Text>
-        <Text style={styles.infoValue}>{profile.gender}</Text>
+        <Text style={styles.infoValue}>{safeProfile.gender}</Text>
       </View>
       <View style={styles.infoItem}>
         <Text style={styles.infoLabel}>Address</Text>
-        <Text style={styles.infoValue}>{profile.address}</Text>
+        <Text style={styles.infoValue}>{safeProfile.address}</Text>
       </View>
     </View>
   );

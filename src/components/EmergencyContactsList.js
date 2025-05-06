@@ -13,9 +13,18 @@ const COLORS = {
 };
 
 export default function EmergencyContactsList({ contacts }) {
+  const safeContacts = Array.isArray(contacts) ? contacts.map(contact => ({
+    id: contact?.id || `contact-${Math.random().toString(36).substr(2, 9)}`,
+    name: typeof contact?.name === 'string' && contact.name.trim() ? contact.name : 'Unknown Contact',
+    relationship: typeof contact?.relationship === 'string' && contact.relationship.trim() ? contact.relationship : 'Not Specified',
+    phone: typeof contact?.phone === 'string' && contact.phone.trim() ? contact.phone : 'Not Provided',
+    email: typeof contact?.email === 'string' && contact.email.trim() ? contact.email : 'Not Provided',
+    image: typeof contact?.image === 'string' && contact.image.trim() ? contact.image : null,
+  })) : [];
+
   return (
     <View style={styles.sectionContent}>
-      {contacts.map((contact) => (
+      {safeContacts.map((contact) => (
         <View key={contact.id} style={styles.contactItem}>
           <View style={styles.contactImageContainer}>
             {contact.image ? (

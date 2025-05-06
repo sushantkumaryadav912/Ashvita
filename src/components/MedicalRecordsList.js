@@ -12,14 +12,26 @@ const COLORS = {
 };
 
 export default function MedicalRecordsList({ records }) {
+  const safeRecords = Array.isArray(records) ? records.map(record => ({
+    id: record?.id || `record-${Math.random().toString(36).substr(2, 9)}`,
+    title: typeof record?.title === 'string' && record.title.trim() ? record.title : 'Untitled Record',
+    date: typeof record?.date === 'string' && record.date.trim() ? record.date : 'Unknown Date',
+    provider: typeof record?.provider === 'string' && record.provider.trim() ? record.provider : 'Unknown Provider',
+    type: typeof record?.type === 'string' && record.type.trim() ? record.type : 'Unknown Type',
+  })) : [];
+
   const formatDate = (dateString) => {
-    const options = { year: 'numeric', month: 'short', day: 'numeric' };
-    return new Date(dateString).toLocaleDateString(undefined, options);
+    try {
+      const options = { year: 'numeric', month: 'short', day: 'numeric' };
+      return new Date(dateString).toLocaleDateString(undefined, options);
+    } catch {
+      return 'Invalid Date';
+    }
   };
 
   return (
     <View style={styles.sectionContent}>
-      {records.map((record) => (
+      {safeRecords.map((record) => (
         <View key={record.id} style={styles.recordItem}>
           <View style={styles.recordIconContainer}>
             <Ionicons name="document-text" size={24} color={COLORS.primary} />
