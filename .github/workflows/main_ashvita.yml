@@ -28,8 +28,13 @@ jobs:
           cd Ashvita_Backend
           npm install
           npm run build --if-present
-          npm run test --if-present
-
+          if [ -f package.json ] && grep -q "\"test\":" package.json; then
+            if grep -q "no test specified" <<< $(npm run test 2>&1); then
+              echo "Skipping test: no test specified"
+            else
+              npm test
+            fi
+          fi
       - name: Zip backend contents
         run: |
           cd Ashvita_Backend
