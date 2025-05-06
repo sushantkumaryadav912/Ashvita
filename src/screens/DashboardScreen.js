@@ -44,7 +44,7 @@ const mockHealthStatus = {
 
 export default function DashboardScreen() {
   return (
-    <ScrollView style={styles.container}>
+    <ScrollView style={styles.container} contentContainerStyle={styles.contentContainer}>
       <View style={styles.header}>
         <Text style={styles.headerTitle}>Health Dashboard</Text>
         <Text style={styles.headerSubtitle}>Real-time health overview</Text>
@@ -90,8 +90,11 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: COLORS.background,
   },
+  contentContainer: {
+    paddingHorizontal: 16, // Keep horizontal padding, remove top/bottom padding
+  },
   header: {
-    padding: 20,
+    paddingVertical: 20,
     backgroundColor: COLORS.primary,
   },
   headerTitle: {
@@ -105,7 +108,7 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
   section: {
-    padding: 16,
+    paddingVertical: 16,
   },
   sectionTitle: {
     fontSize: 18,

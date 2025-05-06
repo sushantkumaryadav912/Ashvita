@@ -15,6 +15,7 @@ export default function AppNavigator() {
     <NavigationContainer>
       <Tab.Navigator
         screenOptions={({ route }) => ({
+          headerShown: true, 
           tabBarIcon: ({ color, size }) => {
             let iconName;
             if (route.name === 'Dashboard') iconName = 'home';

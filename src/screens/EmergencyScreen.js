@@ -1,19 +1,19 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
-import EmergencyButton from '../components/EmergencyButton';
-import QRCodeDisplay from '../components/QRCodeDisplay';
+
+const COLORS = {
+  background: '#f5f5f5',
+  textPrimary: '#333',
+  primary: '#007bff',
+};
 
 export default function EmergencyScreen() {
-  const handleEmergency = () => {
-    // Trigger AI routing and notifications
-    console.log('Emergency triggered');
-  };
-
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Emergency Services</Text>
-      <EmergencyButton onPress={handleEmergency} />
-      <QRCodeDisplay value="patient-id-123" />
+      <View style={styles.customHeader}>
+        <Text style={styles.title}>Emergency</Text>
+      </View>
+      <Text style={styles.message}>This feature is under development.</Text>
     </View>
   );
 }
@@ -21,13 +21,24 @@ export default function EmergencyScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    justifyContent: 'center',
+    backgroundColor: COLORS.background,
+    paddingHorizontal: 16, // Keep horizontal padding, remove top/bottom padding
+  },
+  customHeader: {
+    paddingVertical: 16,
+    backgroundColor: COLORS.primary,
+    borderRadius: 8,
     alignItems: 'center',
-    padding: 20,
+    marginBottom: 16,
   },
   title: {
-    fontSize: 20,
+    fontSize: 24,
     fontWeight: 'bold',
-    marginBottom: 20,
+    color: '#fff',
+  },
+  message: {
+    fontSize: 16,
+    color: COLORS.textPrimary,
+    textAlign: 'center',
   },
 });
