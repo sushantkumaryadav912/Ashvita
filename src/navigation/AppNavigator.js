@@ -1,9 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { createStackNavigator } from '@react-navigation/stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Ionicons } from '@expo/vector-icons';
-import AuthScreen from '../screens/AuthScreen';
+import LoginScreen from '../screens/LoginScreen';
+import SignupScreen from '../screens/SignupScreen';
+import ForgetPasswordScreen from '../screens/ForgetPasswordScreen';
 import DashboardScreen from '../screens/DashboardScreen';
 import EmergencyScreen from '../screens/EmergencyScreen';
 import CommunicationScreen from '../screens/CommunicationScreen';
@@ -37,7 +38,16 @@ function MainTabs() {
       })}
     >
       <Tab.Screen name="Dashboard" component={DashboardScreen} />
-      <Tab.Screen name="Emergency" component={EmergencyScreen} />
+      <Tab.Screen 
+        name="Emergency" 
+        component={EmergencyScreen}
+        options={{
+          tabBarIcon: ({ color, size }) => (
+            <Ionicons name="alert-circle" size={size} color={color} />
+          ),
+          tabBarActiveTintColor: '#E63946', // Highlight emergency tab in red
+        }}
+      />
       <Tab.Screen name="Communication" component={CommunicationScreen} />
       <Tab.Screen name="Profile" component={ProfileScreen} />
       <Tab.Screen name="Settings" component={SettingsScreen} />
@@ -46,35 +56,14 @@ function MainTabs() {
 }
 
 export default function AppNavigator() {
-  const [isLoading, setIsLoading] = useState(true);
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-
-  useEffect(() => {
-    const checkAuthStatus = async () => {
-      try {
-        const token = await AsyncStorage.getItem('token');
-        setIsAuthenticated(!!token);
-      } catch (error) {
-        console.error('Error checking auth status:', error);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    checkAuthStatus();
-  }, []);
-
-  if (isLoading) {
-    return null; // Optionally render a loading screen here
-  }
-
   return (
     <Stack.Navigator screenOptions={{ headerShown: false }}>
-      {isAuthenticated ? (
-        <Stack.Screen name="Main" component={MainTabs} />
-      ) : (
-        <Stack.Screen name="Auth" component={AuthScreen} />
-      )}
+      <Stack.Screen name="Login" component={LoginScreen} />
+      <Stack.Screen name="Signup" component={SignupScreen} />
+      <Stack.Screen name="ForgetPassword" component={ForgetPasswordScreen} />
+      <Stack.Screen name="Home" component={MainTabs} />
+      {/* Add Emergency as a separate stack screen to allow direct navigation */}
+      <Stack.Screen name="Emergency" component={EmergencyScreen} />
     </Stack.Navigator>
   );
 }
