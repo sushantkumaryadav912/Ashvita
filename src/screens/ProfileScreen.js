@@ -9,6 +9,22 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import ProfileInfoCard from '../components/ProfileInfoCard';
 import EmergencyContactsList from '../components/EmergencyContactsList';
 import MedicalRecordsList from '../components/MedicalRecordsList';
+import mockData from '../../assets/data/auth.json';
+
+// Default mock profile in case auth.json is missing or invalid
+const defaultMockProfile = {
+  userType: 'patient',
+  name: 'Unknown User',
+  email: 'unknown@example.com',
+  phone: 'Not Provided',
+  dob: 'Not Provided',
+  gender: 'Not Provided',
+  address: 'Not Provided',
+  bloodType: 'Not Provided',
+  height: 'Not Provided',
+  weight: 'Not Provided',
+  allergies: [],
+};
 
 const COLORS = {
   background: '#f8f9fa',
@@ -42,34 +58,85 @@ export default function ProfileScreen() {
     try {
       setError(null);
       const token = await AsyncStorage.getItem('token');
-      const config = { headers: { Authorization: `Bearer ${token}` } };
+      console.log('Token:', token); // Debug: Log token
+      const config = token ? { headers: { Authorization: `Bearer ${token}` } } : {};
 
       // Fetch profile, emergency contacts, and medical records
       const [profileResponse, contactsResponse, recordsResponse] = await Promise.all([
-        axios.get(`${API_BASE_URL}/profile`, config),
-        axios.get(`${API_BASE_URL}/emergency-contacts`, config),
-        axios.get(`${API_BASE_URL}/medical-records`, config),
+        axios.get(`${API_BASE_URL}/profile`, config).catch((err) => {
+          console.error('Profile API error:', err.message);
+          return { data: mockData.profile || defaultMockProfile };
+        }),
+        axios.get(`${API_BASE_URL}/emergency-contacts`, config).catch((err) => {
+          console.error('Emergency Contacts API error:', err.message);
+          return { data: mockData.emergencyContacts || [] };
+        }),
+        axios.get(`${API_BASE_URL}/medical-records`, config).catch((err) => {
+          console.error('Medical Records API error:', err.message);
+          return { data: mockData.medicalRecords || [] };
+        }),
       ]);
 
-      setProfile(profileResponse.data);
-      setEmergencyContacts(contactsResponse.data);
-      setMedicalRecords(recordsResponse.data);
+      console.log('Profile Response:', profileResponse.data); // Debug: Log API response
+      console.log('Contacts Response:', contactsResponse.data);
+      console.log('Records Response:', recordsResponse.data);
+
+      // Validate and set profile data
+      const profileData = profileResponse.data && typeof profileResponse.data === 'object' 
+        ? profileResponse.data 
+        : (mockData.profile && typeof mockData.profile === 'object' 
+          ? mockData.profile 
+          : defaultMockProfile);
+      setProfile(profileData);
+
+      // Validate and set emergency contacts
+      const contactsData = Array.isArray(contactsResponse.data) 
+        ? contactsResponse.data 
+        : (Array.isArray(mockData.emergencyContacts) ? mockData.emergencyContacts : []);
+      setEmergencyContacts(contactsData);
+
+      // Validate and set medical records
+      const recordsData = Array.isArray(recordsResponse.data) 
+        ? recordsResponse.data 
+        : (Array.isArray(mockData.medicalRecords) ? mockData.medicalRecords : []);
+      setMedicalRecords(recordsData);
 
       // Fetch admin-specific data if user is an admin
-      if (profileResponse.data.userType === 'admin') {
+      if (profileData?.userType === 'admin') {
+        console.log('Fetching admin data...'); // Debug: Confirm admin check
         const [usersRes, patientsRes, doctorsRes] = await Promise.all([
-          axios.get(`${API_BASE_URL}/admin/users`, config),
-          axios.get(`${API_BASE_URL}/admin/patients`, config),
-          axios.get(`${API_BASE_URL}/admin/doctors`, config),
+          axios.get(`${API_BASE_URL}/admin/users`, config).catch((err) => {
+            console.error('Admin Users API error:', err.message);
+            return { data: mockData.adminUsers || [] };
+          }),
+          axios.get(`${API_BASE_URL}/admin/patients`, config).catch((err) => {
+            console.error('Admin Patients API error:', err.message);
+            return { data: mockData.adminPatients || [] };
+          }),
+          axios.get(`${API_BASE_URL}/admin/doctors`, config).catch((err) => {
+            console.error('Admin Doctors API error:', err.message);
+            return { data: mockData.adminDoctors || [] };
+          }),
         ]);
 
-        setAdminUsers(usersRes.data);
-        setAdminPatients(patientsRes.data);
-        setAdminDoctors(doctorsRes.data);
+        console.log('Admin Users:', usersRes.data); // Debug: Log admin responses
+        console.log('Admin Patients:', patientsRes.data);
+        console.log('Admin Doctors:', doctorsRes.data);
+
+        setAdminUsers(Array.isArray(usersRes.data) ? usersRes.data : (Array.isArray(mockData.adminUsers) ? mockData.adminUsers : []));
+        setAdminPatients(Array.isArray(patientsRes.data) ? patientsRes.data : (Array.isArray(mockData.adminPatients) ? mockData.adminPatients : []));
+        setAdminDoctors(Array.isArray(doctorsRes.data) ? doctorsRes.data : (Array.isArray(mockData.adminDoctors) ? mockData.adminDoctors : []));
       }
     } catch (err) {
-      setError('Failed to fetch profile data. Please try again later.');
+      setError('Failed to fetch profile data. Using mock data.');
       console.error('Error fetching profile data:', err);
+      // Fallback to mock data
+      setProfile(mockData.profile && typeof mockData.profile === 'object' ? mockData.profile : defaultMockProfile);
+      setEmergencyContacts(Array.isArray(mockData.emergencyContacts) ? mockData.emergencyContacts : []);
+      setMedicalRecords(Array.isArray(mockData.medicalRecords) ? mockData.medicalRecords : []);
+      setAdminUsers(Array.isArray(mockData.adminUsers) ? mockData.adminUsers : []);
+      setAdminPatients(Array.isArray(mockData.adminPatients) ? mockData.adminPatients : []);
+      setAdminDoctors(Array.isArray(mockData.adminDoctors) ? mockData.adminDoctors : []);
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -84,6 +151,21 @@ export default function ProfileScreen() {
     setRefreshing(true);
     fetchData();
   }, [fetchData]);
+
+  // Option to force mock data for testing
+  const useMockData = false; // Set to true to use mock data only
+  useEffect(() => {
+    if (useMockData) {
+      console.log('Using mock data only'); // Debug: Confirm mock data usage
+      setProfile(mockData.profile && typeof mockData.profile === 'object' ? mockData.profile : defaultMockProfile);
+      setEmergencyContacts(Array.isArray(mockData.emergencyContacts) ? mockData.emergencyContacts : []);
+      setMedicalRecords(Array.isArray(mockData.medicalRecords) ? mockData.medicalRecords : []);
+      setAdminUsers(Array.isArray(mockData.adminUsers) ? mockData.adminUsers : []);
+      setAdminPatients(Array.isArray(mockData.adminPatients) ? mockData.adminPatients : []);
+      setAdminDoctors(Array.isArray(mockData.adminDoctors) ? mockData.adminDoctors : []);
+      setLoading(false);
+    }
+  }, []);
 
   if (loading) {
     return (

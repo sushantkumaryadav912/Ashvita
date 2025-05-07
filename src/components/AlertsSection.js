@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Animated } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
 const COLORS = {
@@ -15,8 +15,8 @@ const COLORS = {
 };
 
 export default function AlertsSection({ alerts }) {
-  const getAlertIcon = (type) => {
-    switch (type) {
+  const getAlertIcon = (severity) => {
+    switch (severity) {
       case 'critical':
         return <Ionicons name="warning" size={20} color={COLORS.error} />;
       case 'warning':
@@ -28,8 +28,8 @@ export default function AlertsSection({ alerts }) {
     }
   };
 
-  const getAlertColor = (type) => {
-    switch (type) {
+  const getAlertColor = (severity) => {
+    switch (severity) {
       case 'critical':
         return COLORS.error;
       case 'warning':
@@ -41,8 +41,8 @@ export default function AlertsSection({ alerts }) {
     }
   };
 
-  const getAlertBackground = (type) => {
-    switch (type) {
+  const getAlertBackground = (severity) => {
+    switch (severity) {
       case 'critical':
         return COLORS.errorLight;
       case 'warning':
@@ -63,17 +63,17 @@ export default function AlertsSection({ alerts }) {
         alertsArray.map((alert) => (
           <TouchableOpacity 
             key={alert.id} 
-            style={[styles.alertCard, { backgroundColor: getAlertBackground(alert.type) }]}
+            style={[styles.alertCard, { backgroundColor: getAlertBackground(alert.severity) }]}
             activeOpacity={0.8}
           >
             <View style={styles.alertIconContainer}>
-              {getAlertIcon(alert.type)}
+              {getAlertIcon(alert.severity)}
             </View>
             
             <View style={styles.alertContent}>
               <View style={styles.alertHeader}>
-                <Text style={[styles.alertType, { color: getAlertColor(alert.type) }]}>
-                  {alert.type.charAt(0).toUpperCase() + alert.type.slice(1)}
+                <Text style={[styles.alertType, { color: getAlertColor(alert.severity) }]}>
+                  {(alert.severity || 'info').charAt(0).toUpperCase() + (alert.severity || 'info').slice(1)}
                 </Text>
                 <Text style={styles.alertTimestamp}>{alert.timestamp}</Text>
               </View>
@@ -82,10 +82,10 @@ export default function AlertsSection({ alerts }) {
               
               <View style={styles.alertActions}>
                 <TouchableOpacity style={styles.actionButton}>
-                  <Text style={[styles.actionText, { color: getAlertColor(alert.type) }]}>Dismiss</Text>
+                  <Text style={[styles.actionText, { color: getAlertColor(alert.severity) }]}>Dismiss</Text>
                 </TouchableOpacity>
                 <TouchableOpacity style={styles.actionButton}>
-                  <Text style={[styles.actionText, { color: getAlertColor(alert.type) }]}>Details</Text>
+                  <Text style={[styles.actionText, { color: getAlertColor(alert.severity) }]}>Details</Text>
                 </TouchableOpacity>
               </View>
             </View>

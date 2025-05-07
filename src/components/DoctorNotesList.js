@@ -1,6 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ActivityIndicator } from 'react-native';
-import axios from 'axios';
+import React from 'react';
+import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
 const COLORS = {
@@ -13,63 +12,20 @@ const COLORS = {
   error: '#EF476F',
 };
 
-// Base URL for the Azure backend API
-const API_BASE_URL = process.env.API_BASE_URL || 'https://your-api-url.com/api';
-
-export default function DoctorNotesList() {
-  const [notes, setNotes] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-
-  useEffect(() => {
-    const fetchDoctorNotes = async () => {
-      try {
-        setLoading(true);
-        setError(null);
-
-        const response = await axios.get(`${API_BASE_URL}/doctor-notes`);
-        // Ensure response.data is an array, default to empty array if not
-        const notesData = Array.isArray(response.data) ? response.data : [];
-        setNotes(notesData);
-      } catch (err) {
-        setError('Failed to fetch doctor notes.');
-        console.error('Error fetching doctor notes:', err);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchDoctorNotes();
-  }, []);
-
+export default function DoctorNotesList({ notes }) {
   const formatDate = (dateString) => {
     const options = { year: 'numeric', month: 'short', day: 'numeric' };
-    return new Date(dateString).toLocaleDateString(undefined, options);
+    return dateString ? new Date(dateString).toLocaleDateString(undefined, options) : 'N/A';
   };
 
-  if (loading) {
-    return (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator size="small" color={COLORS.primary} />
-        <Text style={styles.loadingText}>Loading doctor notes...</Text>
-      </View>
-    );
-  }
-
-  if (error) {
-    return (
-      <View style={styles.errorContainer}>
-        <Ionicons name="alert-circle" size={20} color={COLORS.error} />
-        <Text style={styles.errorText}>{error}</Text>
-      </View>
-    );
-  }
+  // Ensure notes is an array
+  const notesArray = Array.isArray(notes) ? notes : [];
 
   return (
     <View style={styles.container}>
-      {notes.length > 0 ? (
+      {notesArray.length > 0 ? (
         <>
-          {notes.map((note) => (
+          {notesArray.map((note) => (
             <TouchableOpacity 
               key={note.id} 
               style={styles.noteCard}
@@ -81,8 +37,8 @@ export default function DoctorNotesList() {
                     <Ionicons name="person" size={18} color={COLORS.primary} />
                   </View>
                   <View>
-                    <Text style={styles.doctorName}>{note.doctorName}</Text>
-                    <Text style={styles.doctorSpecialty}>{note.specialty}</Text>
+                    <Text style={styles.doctorName}>{note.doctor || 'Unknown Doctor'}</Text>
+                    <Text style={styles.doctorSpecialty}>{note.specialty || 'General'}</Text>
                   </View>
                 </View>
                 <View style={styles.dateContainer}>
@@ -93,7 +49,7 @@ export default function DoctorNotesList() {
               
               <View style={styles.divider} />
               
-              <Text style={styles.noteText} numberOfLines={3}>{note.note}</Text>
+              <Text style={styles.noteText} numberOfLines={3}>{note.note || 'No note available'}</Text>
               
               <TouchableOpacity style={styles.viewMoreButton}>
                 <Text style={styles.viewMoreText}>View Full Note</Text>
@@ -209,30 +165,6 @@ const styles = StyleSheet.create({
     color: COLORS.primary,
     fontWeight: '600',
     marginRight: 4,
-  },
-  loadingContainer: {
-    padding: 20,
-    alignItems: 'center',
-    backgroundColor: COLORS.cardBackground,
-    borderRadius: 16,
-  },
-  loadingText: {
-    fontSize: 14,
-    color: COLORS.textPrimary,
-    marginTop: 8,
-  },
-  errorContainer: {
-    padding: 16,
-    backgroundColor: '#FFEDF1',
-    borderRadius: 16,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  errorText: {
-    fontSize: 14,
-    color: COLORS.error,
-    marginLeft: 8,
   },
   noDataContainer: {
     backgroundColor: COLORS.cardBackground,

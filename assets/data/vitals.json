@@ -1,0 +1,62 @@
+{
+    "vitals": [
+      {
+        "title": "Heart Rate",
+        "value": 72,
+        "unit": "bpm",
+        "icon": "heart",
+        "color": "#EF476F",
+        "trend": "stable"
+      },
+      {
+        "title": "Blood Pressure",
+        "value": "120/80",
+        "unit": "mmHg",
+        "icon": "pulse",
+        "color": "#06D6A0",
+        "trend": "up"
+      },
+      {
+        "title": "Temperature",
+        "value": 98.6,
+        "unit": "°F",
+        "icon": "thermometer",
+        "color": "#FFD166",
+        "trend": "stable"
+      }
+    ],
+    "alerts": [
+      {
+        "id": "alert1",
+        "title": "High Heart Rate",
+        "message": "Your heart rate was above normal range.",
+        "severity": "warning",
+        "timestamp": "2025-05-07T10:00:00Z"
+      },
+      {
+        "id": "alert2",
+        "title": "Medication Reminder",
+        "message": "Time to take your morning medication.",
+        "severity": "info",
+        "timestamp": "2025-05-07T08:00:00Z"
+      }
+    ],
+    "healthStatus": {
+      "status": "normal",
+      "message": "All vital signs are within normal ranges."
+    },
+    "doctorNotes": [
+      {
+        "id": "note1",
+        "date": "2025-05-06",
+        "doctor": "Dr. Smith",
+        "note": "Patient shows stable vitals. Continue current medication."
+      },
+      {
+        "id": "note2",
+        "date": "2025-05-05",
+        "doctor": "Dr. Jones",
+        "note": "Recommended increasing fluid intake."
+      }
+    ]
+  }

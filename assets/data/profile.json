@@ -1,0 +1,98 @@
+{
+    "profile": {
+      "userType": "patient",
+      "name": "John Doe",
+      "email": "john.doe@example.com",
+      "phone": "+1-555-123-4567",
+      "dob": "1990-05-15",
+      "gender": "Male",
+      "address": "123 Main St, Springfield, IL",
+      "bloodType": "O+",
+      "height": "175 cm",
+      "weight": "70 kg",
+      "allergies": ["Peanuts", "Penicillin"],
+      "avatar": "https://example.com/avatar.jpg"
+    },
+    "emergencyContacts": [
+      {
+        "id": "contact1",
+        "name": "Jane Doe",
+        "relationship": "Spouse",
+        "phone": "+1-555-987-6543",
+        "email": "jane.doe@example.com",
+        "isPrimary": true
+      },
+      {
+        "id": "contact2",
+        "name": "Bob Smith",
+        "relationship": "Friend",
+        "phone": "+1-555-456-7890",
+        "email": "bob.smith@example.com",
+        "isPrimary": false
+      }
+    ],
+    "medicalRecords": [
+      {
+        "id": "record1",
+        "title": "Blood Test Results",
+        "date": "2025-04-20",
+        "provider": "Springfield General Hospital",
+        "type": "Lab Test",
+        "description": "Complete blood count and lipid panel.",
+        "fileType": "pdf",
+        "fileSize": "1.5 MB"
+      },
+      {
+        "id": "record2",
+        "title": "Flu Vaccination",
+        "date": "2025-03-10",
+        "provider": "City Clinic",
+        "type": "Vaccination",
+        "description": "Annual flu shot administered.",
+        "fileType": "pdf",
+        "fileSize": "0.8 MB"
+      }
+    ],
+    "adminUsers": [
+      {
+        "id": "user1",
+        "name": "Alice Admin",
+        "userType": "admin",
+        "email": "alice@example.com"
+      },
+      {
+        "id": "user2",
+        "name": "Bob Admin",
+        "userType": "admin",
+        "email": "bob@example.com"
+      }
+    ],
+    "adminPatients": [
+      {
+        "id": "patient1",
+        "name": "Carol Patient",
+        "email": "carol@example.com",
+        "allergies": ["Latex"]
+      },
+      {
+        "id": "patient2",
+        "name": "Dave Patient",
+        "email": "dave@example.com",
+        "allergies": []
+      }
+    ],
+    "adminDoctors": [
+      {
+        "id": "doctor1",
+        "name": "Dr. Emma",
+        "email": "emma@example.com",
+        "specialization": "Cardiology"
+      },
+      {
+        "id": "doctor2",
+        "name": "Dr. Frank",
+        "email": "frank@example.com",
+        "specialization": "Neurology"
+      }
+    ]
+  }

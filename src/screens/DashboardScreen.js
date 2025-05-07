@@ -9,9 +9,11 @@ import {
   SafeAreaView,
   StatusBar
 } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
+import mockData from '../../assets/data/vitals.json';
 
 // Components
 import AlertsSection from '../components/AlertsSection';
@@ -45,6 +47,7 @@ export default function DashboardScreen() {
   const [vitals, setVitals] = useState([]);
   const [alerts, setAlerts] = useState([]);
   const [healthStatus, setHealthStatus] = useState(null);
+  const [doctorNotes, setDoctorNotes] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [refreshing, setRefreshing] = useState(false);
@@ -54,21 +57,35 @@ export default function DashboardScreen() {
       setLoading(true);
       setError(null);
 
+      // Get authentication token from AsyncStorage
+      const token = await AsyncStorage.getItem('token');
+      const headers = token ? { Authorization: `Bearer ${token}` } : {};
+
       // Fetch all data concurrently
-      const [vitalsResponse, alertsResponse, healthStatusResponse] = await Promise.all([
-        axios.get(`${API_BASE_URL}/vitals`),
-        axios.get(`${API_BASE_URL}/alerts`),
-        axios.get(`${API_BASE_URL}/health-status`),
+      const [vitalsResponse, alertsResponse, healthStatusResponse, doctorNotesResponse] = await Promise.all([
+        axios.get(`${API_BASE_URL}/vitals`, { headers }).catch(() => ({ data: mockData.vitals })),
+        axios.get(`${API_BASE_URL}/alerts`, { headers }).catch(() => ({ data: mockData.alerts })),
+        axios.get(`${API_BASE_URL}/health-status`, { headers }).catch(() => ({ data: mockData.healthStatus })),
+        axios.get(`${API_BASE_URL}/doctor-notes`, { headers }).catch(() => ({ data: mockData.doctorNotes })),
       ]);
 
-      // Ensure vitals is an array
-      const vitalsData = Array.isArray(vitalsResponse.data) ? vitalsResponse.data : [];
-      
+      // Ensure data is in the expected format
+      const vitalsData = Array.isArray(vitalsResponse.data) ? vitalsResponse.data : mockData.vitals;
+      const alertsData = Array.isArray(alertsResponse.data) ? alertsResponse.data : mockData.alerts;
+      const healthStatusData = healthStatusResponse.data && typeof healthStatusResponse.data === 'object' ? healthStatusResponse.data : mockData.healthStatus;
+      const doctorNotesData = Array.isArray(doctorNotesResponse.data) ? doctorNotesResponse.data : mockData.doctorNotes;
+
       setVitals(vitalsData);
-      setAlerts(alertsResponse.data);
-      setHealthStatus(healthStatusResponse.data);
+      setAlerts(alertsData);
+      setHealthStatus(healthStatusData);
+      setDoctorNotes(doctorNotesData);
     } catch (err) {
-      setError('Failed to fetch data. Please try again later.');
+      setError('Failed to fetch data. Using mock data.');
+      // Fallback to mock data for all sections
+      setVitals(mockData.vitals);
+      setAlerts(mockData.alerts);
+      setHealthStatus(mockData.healthStatus);
+      setDoctorNotes(mockData.doctorNotes);
       console.error('Error fetching data:', err);
     } finally {
       setLoading(false);
@@ -84,6 +101,18 @@ export default function DashboardScreen() {
     setRefreshing(true);
     fetchData();
   };
+
+  // Option to force mock data for testing
+  const useMockData = false; // Set to true to use mock data only
+  useEffect(() => {
+    if (useMockData) {
+      setVitals(mockData.vitals);
+      setAlerts(mockData.alerts);
+      setHealthStatus(mockData.healthStatus);
+      setDoctorNotes(mockData.doctorNotes);
+      setLoading(false);
+    }
+  }, []);
 
   if (loading && !refreshing) {
     return (
@@ -191,7 +220,7 @@ export default function DashboardScreen() {
             )}
           </View>
           
-          {alerts.length > 0 ? (
+          {Array.isArray(alerts) && alerts.length > 0 ? (
             <AlertsSection alerts={alerts} />
           ) : (
             <View style={styles.noDataContainer}>
@@ -203,7 +232,14 @@ export default function DashboardScreen() {
 
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Recent Doctor Notes</Text>
-          <DoctorNotesList />
+          {Array.isArray(doctorNotes) && doctorNotes.length > 0 ? (
+            <DoctorNotesList notes={doctorNotes} />
+          ) : (
+            <View style={styles.noDataContainer}>
+              <Ionicons name="document-text" size={24} color={COLORS.textSecondary} />
+              <Text style={styles.noDataText}>No doctor notes available.</Text>
+            </View>
+          )}
         </View>
       </ScrollView>
     </SafeAreaView>
@@ -218,12 +254,10 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: COLORS.background,
-    
   },
   contentContainer: {
     paddingHorizontal: 16,
     paddingBottom: 32,
-  
   },
   headerContainer: {
     width: '100%',
