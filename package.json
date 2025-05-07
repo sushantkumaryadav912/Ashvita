@@ -15,7 +15,17 @@
     "plugins": [
       "expo-av",
       "expo-document-picker"
-    ]
+    ],
+    "doctor": {
+      "reactNativeDirectoryCheck": {
+        "exclude": [
+          "react-native-document-picker",
+          "@react-native-community/cli",
+          "lodash.debounce",
+          "lucide-react"
+        ]
+      }
+    }
   },
   "dependencies": {
     "@expo/vector-icons": "^14.1.0",
@@ -51,5 +61,6 @@
     "metro-react-native-babel-preset": "^0.77.0",
     "react-native-dotenv": "^3.4.11"
   },
+
   "private": true
 }
